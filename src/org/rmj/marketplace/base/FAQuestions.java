@@ -23,9 +23,9 @@ import org.rmj.appdriver.constants.EditMode;
  *
  * @author User
  */
-public class ProductReviews {
-    private final String MASTER_TABLE = "MP_Reviews";
-    
+public class FAQuestions {
+    private final String MASTER_TABLE = "MP_Questions";
+     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
     
@@ -40,7 +40,7 @@ public class ProductReviews {
     private CachedRowSet p_oMaster;
     private LTransaction p_oListener;
    
-    public ProductReviews(GRider foApp, String fsBranchCd, boolean fbWithParent){        
+    public FAQuestions(GRider foApp, String fsBranchCd, boolean fbWithParent){        
         p_oApp = foApp;
         p_sBranchCd = fsBranchCd;
         p_bWithParent = fbWithParent;        
@@ -121,7 +121,6 @@ public class ProductReviews {
         //set transaction number on records
         String lsTransNox = (String) getMaster("sListngID");
 
-        String lsEntryNox = getMaster("nEntryNox").toString();
         p_oMaster.updateObject("sRepliedx", p_oApp.getUserID());
         p_oMaster.updateObject("dRepliedx", p_oApp.getServerDate().toString());
         p_oMaster.updateRow();
@@ -129,7 +128,7 @@ public class ProductReviews {
         lsSQL = MiscUtil.rowset2SQL(p_oMaster, 
                                     MASTER_TABLE, 
                                     "xBarCodex;xDescript;xBrandNme;xModelNme;xColorNme;xCategrNm;sImagesxx;sCompnyNm", 
-                                    "sListngID = " + SQLUtil.toSQL(lsTransNox) + " AND nEntryNox = " + SQLUtil.toSQL(lsEntryNox));
+                                    "sListngID = " + SQLUtil.toSQL(lsTransNox));
 
         if (!lsSQL.isEmpty()){
             if (!p_bWithParent) p_oApp.beginTrans();
@@ -167,7 +166,7 @@ public class ProductReviews {
        if ("1".equals((String) getMaster("cReadxxxx"))){
             return false;
         }
-        System.out.println("EntryNox = " + lsEntryNox);
+        
         int lnCtr;
         int lnRow;
         String lsSQL;
@@ -221,8 +220,6 @@ public class ProductReviews {
         
         p_oMaster.first();
         
-        System.out.println("fnIndex = " + fnIndex);
-        System.out.println("foValue = " + foValue);
         switch (fnIndex){
             case 8:
             case 10: 
@@ -310,7 +307,93 @@ public class ProductReviews {
         System.out.println("END: MASTER TABLE INFO");
         System.out.println("----------------------------------------");
     }
-    
+    private void createMaster() throws SQLException{
+        RowSetMetaData meta = new RowSetMetaDataImpl();
+
+        meta.setColumnCount(15);
+
+        meta.setColumnName(1, "sListngID");
+        meta.setColumnLabel(1, "sListngID");
+        meta.setColumnType(1, Types.VARCHAR);
+        meta.setColumnDisplaySize(1, 12);
+
+        meta.setColumnName(2, "nEntryNox");
+        meta.setColumnLabel(2, "nEntryNox");
+        meta.setColumnType(2, Types.INTEGER);
+        
+        meta.setColumnName(3, "nRatingxx");
+        meta.setColumnLabel(3, "nRatingxx");
+        meta.setColumnType(3, Types.INTEGER);
+        
+        meta.setColumnName(4, "sQuestion");
+        meta.setColumnLabel(4, "sQuestion");
+        meta.setColumnType(4, Types.VARCHAR);
+        meta.setColumnDisplaySize(4, 256);
+        
+        meta.setColumnName(5, "sReplyxxx");
+        meta.setColumnLabel(5, "sReplyxxx");
+        meta.setColumnType(5, Types.VARCHAR);
+        meta.setColumnDisplaySize(5, 256);
+        
+        meta.setColumnName(6, "nPriority");
+        meta.setColumnLabel(6, "nPriority");
+        meta.setColumnType(6, Types.INTEGER);
+        
+        meta.setColumnName(7, "sCreatedx");
+        meta.setColumnLabel(7, "sCreatedx");
+        meta.setColumnType(7, Types.VARCHAR);
+        meta.setColumnDisplaySize(7, 12);
+        
+        meta.setColumnName(8, "dCreatedx");
+        meta.setColumnLabel(8, "dCreatedx");
+        meta.setColumnType(8, Types.TIMESTAMP);
+        
+        meta.setColumnName(9, "sRepliedx");
+        meta.setColumnLabel(9, "sRepliedx");
+        meta.setColumnType(9, Types.VARCHAR);
+        meta.setColumnDisplaySize(9, 12);
+        
+        meta.setColumnName(10, "dRepliedx");
+        meta.setColumnLabel(10, "dRepliedx");
+        meta.setColumnType(10, Types.TIMESTAMP);
+        
+        meta.setColumnName(11, "cReadxxxx");
+        meta.setColumnLabel(11, "cReadxxxx ");
+        meta.setColumnType(11, Types.VARCHAR);
+        meta.setColumnDisplaySize(11, 1);
+        
+        meta.setColumnName(12, "dReadxxxx");
+        meta.setColumnLabel(12, "dReadxxxx");
+        meta.setColumnType(12, Types.TIMESTAMP);
+        
+        meta.setColumnName(13, "sReadxxxx");
+        meta.setColumnLabel(13, "sReadxxxx");
+        meta.setColumnType(13, Types.VARCHAR);
+        meta.setColumnDisplaySize(13, 12);
+        
+        meta.setColumnName(14, "cRecdStat");
+        meta.setColumnLabel(14, "cRecdStat");
+        meta.setColumnType(14, Types.VARCHAR);
+        meta.setColumnDisplaySize(14, 1);
+        
+        meta.setColumnName(15, "dTimeStmp");
+        meta.setColumnLabel(15, "dTimeStmp");
+        meta.setColumnType(15, Types.TIMESTAMP);
+        
+        p_oMaster = new CachedRowSetImpl();
+        p_oMaster.setMetaData(meta);
+        
+        p_oMaster.last();
+        p_oMaster.moveToInsertRow();
+        
+        MiscUtil.initRowSet(p_oMaster);       
+        
+        p_oMaster.updateObject("sListngID", MiscUtil.getNextCode(MASTER_TABLE, "sListngID", true, p_oApp.getConnection(), p_sBranchCd));
+        p_oMaster.updateObject("cRecdStat", "0");
+        
+        p_oMaster.insertRow();
+        p_oMaster.moveToCurrentRow();
+    }
     private boolean isEntryOK() throws SQLException{           
         //validate master               
         if ("".equals((String) getMaster("sListngID"))){
@@ -331,8 +414,7 @@ public class ProductReviews {
         lsSQL = "SELECT " +
                     " a.sListngID " +
                     ", a.nEntryNox " +
-                    ",  a.nRatingxx " +
-                    ",  a.sRemarksx " +
+                    ",  a.sQuestion " +
                     ",  a.sReplyxxx " +
                     ",  a.nPriority " +
                     ",  a.sCreatedx " +
@@ -358,8 +440,7 @@ public class ProductReviews {
                     "  LEFT JOIN MP_Inv_Master b " +
                     "    ON a.sListngID = b.sListngID " +
                     "  LEFT JOIN Inv_Category c " +
-                    "    ON b.sCategrID = c.sCategrID " +
-                    "  ORDER BY a.sTransNox DESC ";
+                    "    ON b.sCategrID = c.sCategrID ";
         
         return lsSQL;
     }
@@ -381,8 +462,7 @@ public class ProductReviews {
         lsSQL = "SELECT " +
                     " a.sListngID " +
                     ", a.nEntryNox " +
-                    ",  a.nRatingxx " +
-                    ",  a.sRemarksx " +
+                    ",  a.sQuestion " +
                     ",  a.sReplyxxx " +
                     ",  a.nPriority " +
                     ",  a.sCreatedx " +
@@ -419,7 +499,7 @@ public class ProductReviews {
                 " WHERE b.sStockIDx = d.sStockIDx " +
                     " AND b.sCategrID IN('0002', '0004') " +
                     " AND " + lsCondition;
-        System.out.println(lsSQL);
+        
         return lsSQL;
     }
     
