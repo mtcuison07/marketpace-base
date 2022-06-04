@@ -4,15 +4,12 @@
  */
 package org.rmj.marketplace.base;
 
-import com.sun.rowset.CachedRowSetImpl;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.Date;
-import javax.sql.RowSetMetaData;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
-import javax.sql.rowset.RowSetMetaDataImpl;
 import javax.sql.rowset.RowSetProvider;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
@@ -25,7 +22,6 @@ import org.rmj.appdriver.constants.EditMode;
  */
 public class FAQuestions {
     private final String MASTER_TABLE = "MP_Questions";
-     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
     
@@ -78,11 +74,11 @@ public class FAQuestions {
         String lsSQL = "";
         
         if (fbByCode)
-            lsSQL = getSQ_Detail()+ " HAVING sCreatedx LIKE " + SQLUtil.toSQL(fsTransNox + "%");
+            lsSQL = getSQ_Master()+ " HAVING sCreatedx LIKE " + SQLUtil.toSQL(fsTransNox + "%");
         else
-            lsSQL = getSQ_Detail() + " HAVING sCompnyNm LIKE " + SQLUtil.toSQL(fsTransNox + "%");
+            lsSQL = getSQ_Master() + " HAVING sCompnyNm LIKE " + SQLUtil.toSQL(fsTransNox + "%");
 //        
-        ResultSet loRS = p_oApp.executeQuery(getSQ_Detail());
+        ResultSet loRS = p_oApp.executeQuery(getSQ_Master());
         if (MiscUtil.RecordCount(loRS) == 0){
             MiscUtil.close(loRS);
             p_sMessage = "No record found for the given criteria.";
@@ -121,6 +117,7 @@ public class FAQuestions {
         //set transaction number on records
         String lsTransNox = (String) getMaster("sListngID");
 
+        String lsEntryNox = getMaster("nEntryNox").toString();
         p_oMaster.updateObject("sRepliedx", p_oApp.getUserID());
         p_oMaster.updateObject("dRepliedx", p_oApp.getServerDate().toString());
         p_oMaster.updateRow();
@@ -128,7 +125,7 @@ public class FAQuestions {
         lsSQL = MiscUtil.rowset2SQL(p_oMaster, 
                                     MASTER_TABLE, 
                                     "xBarCodex;xDescript;xBrandNme;xModelNme;xColorNme;xCategrNm;sImagesxx;sCompnyNm", 
-                                    "sListngID = " + SQLUtil.toSQL(lsTransNox));
+                                    "sListngID = " + SQLUtil.toSQL(lsTransNox) + " AND nEntryNox = " + SQLUtil.toSQL(lsEntryNox));
 
         if (!lsSQL.isEmpty()){
             if (!p_bWithParent) p_oApp.beginTrans();
@@ -166,7 +163,7 @@ public class FAQuestions {
        if ("1".equals((String) getMaster("cReadxxxx"))){
             return false;
         }
-        
+        System.out.println("EntryNox = " + lsEntryNox);
         int lnCtr;
         int lnRow;
         String lsSQL;
@@ -220,6 +217,8 @@ public class FAQuestions {
         
         p_oMaster.first();
         
+        System.out.println("fnIndex = " + fnIndex);
+        System.out.println("foValue = " + foValue);
         switch (fnIndex){
             case 8:
             case 10: 
@@ -307,93 +306,7 @@ public class FAQuestions {
         System.out.println("END: MASTER TABLE INFO");
         System.out.println("----------------------------------------");
     }
-    private void createMaster() throws SQLException{
-        RowSetMetaData meta = new RowSetMetaDataImpl();
-
-        meta.setColumnCount(15);
-
-        meta.setColumnName(1, "sListngID");
-        meta.setColumnLabel(1, "sListngID");
-        meta.setColumnType(1, Types.VARCHAR);
-        meta.setColumnDisplaySize(1, 12);
-
-        meta.setColumnName(2, "nEntryNox");
-        meta.setColumnLabel(2, "nEntryNox");
-        meta.setColumnType(2, Types.INTEGER);
-        
-        meta.setColumnName(3, "nRatingxx");
-        meta.setColumnLabel(3, "nRatingxx");
-        meta.setColumnType(3, Types.INTEGER);
-        
-        meta.setColumnName(4, "sQuestion");
-        meta.setColumnLabel(4, "sQuestion");
-        meta.setColumnType(4, Types.VARCHAR);
-        meta.setColumnDisplaySize(4, 256);
-        
-        meta.setColumnName(5, "sReplyxxx");
-        meta.setColumnLabel(5, "sReplyxxx");
-        meta.setColumnType(5, Types.VARCHAR);
-        meta.setColumnDisplaySize(5, 256);
-        
-        meta.setColumnName(6, "nPriority");
-        meta.setColumnLabel(6, "nPriority");
-        meta.setColumnType(6, Types.INTEGER);
-        
-        meta.setColumnName(7, "sCreatedx");
-        meta.setColumnLabel(7, "sCreatedx");
-        meta.setColumnType(7, Types.VARCHAR);
-        meta.setColumnDisplaySize(7, 12);
-        
-        meta.setColumnName(8, "dCreatedx");
-        meta.setColumnLabel(8, "dCreatedx");
-        meta.setColumnType(8, Types.TIMESTAMP);
-        
-        meta.setColumnName(9, "sRepliedx");
-        meta.setColumnLabel(9, "sRepliedx");
-        meta.setColumnType(9, Types.VARCHAR);
-        meta.setColumnDisplaySize(9, 12);
-        
-        meta.setColumnName(10, "dRepliedx");
-        meta.setColumnLabel(10, "dRepliedx");
-        meta.setColumnType(10, Types.TIMESTAMP);
-        
-        meta.setColumnName(11, "cReadxxxx");
-        meta.setColumnLabel(11, "cReadxxxx ");
-        meta.setColumnType(11, Types.VARCHAR);
-        meta.setColumnDisplaySize(11, 1);
-        
-        meta.setColumnName(12, "dReadxxxx");
-        meta.setColumnLabel(12, "dReadxxxx");
-        meta.setColumnType(12, Types.TIMESTAMP);
-        
-        meta.setColumnName(13, "sReadxxxx");
-        meta.setColumnLabel(13, "sReadxxxx");
-        meta.setColumnType(13, Types.VARCHAR);
-        meta.setColumnDisplaySize(13, 12);
-        
-        meta.setColumnName(14, "cRecdStat");
-        meta.setColumnLabel(14, "cRecdStat");
-        meta.setColumnType(14, Types.VARCHAR);
-        meta.setColumnDisplaySize(14, 1);
-        
-        meta.setColumnName(15, "dTimeStmp");
-        meta.setColumnLabel(15, "dTimeStmp");
-        meta.setColumnType(15, Types.TIMESTAMP);
-        
-        p_oMaster = new CachedRowSetImpl();
-        p_oMaster.setMetaData(meta);
-        
-        p_oMaster.last();
-        p_oMaster.moveToInsertRow();
-        
-        MiscUtil.initRowSet(p_oMaster);       
-        
-        p_oMaster.updateObject("sListngID", MiscUtil.getNextCode(MASTER_TABLE, "sListngID", true, p_oApp.getConnection(), p_sBranchCd));
-        p_oMaster.updateObject("cRecdStat", "0");
-        
-        p_oMaster.insertRow();
-        p_oMaster.moveToCurrentRow();
-    }
+    
     private boolean isEntryOK() throws SQLException{           
         //validate master               
         if ("".equals((String) getMaster("sListngID"))){
@@ -410,7 +323,18 @@ public class FAQuestions {
     }
     public String getSQ_Master(){
         String lsSQL = "";
-                
+        String lsCondition = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            
+            lsCondition = "a.cRecdStat IN (" + lsSQL.substring(2) + ")";
+        } else 
+            lsCondition = "a.cRecdStat = " + SQLUtil.toSQL(lsStat);
+        
         lsSQL = "SELECT " +
                     " a.sListngID " +
                     ", a.nEntryNox " +
@@ -431,20 +355,16 @@ public class FAQuestions {
                     ",  '' xBrandNme " +
                     ",  '' xModelNme " +
                     ",  '' xColorNme " +
-                    ",  c.sDescript xCategrNm " +
-                    ",  b.sImagesxx " +
-                    ",  CONCAT(h.sFrstName, ' ', h.sMiddName,' ', h.sLastName) AS sCompnyNm " +
+                    ",  '' xCategrNm " +
+                    ",  '' sImagesxx " +
+                    ",  CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sCompnyNm " +
                 " FROM " + MASTER_TABLE + " a " +
-                    "  LEFT JOIN Client_Master h " +
-                    "    ON a.sCreatedx = h.sClientID " +
-                    "  LEFT JOIN MP_Inv_Master b " +
-                    "    ON a.sListngID = b.sListngID " +
-                    "  LEFT JOIN Inv_Category c " +
-                    "    ON b.sCategrID = c.sCategrID ";
-        
+                    "  LEFT JOIN Client_Master b " +
+                    "    ON a.sCreatedx = b.sClientID " +
+                " WHERE " + lsCondition;
+        System.out.println(lsSQL);
         return lsSQL;
     }
-    
     public String getSQ_Detail(){
         String lsSQL = "";
         String lsCondition = "";
@@ -462,7 +382,8 @@ public class FAQuestions {
         lsSQL = "SELECT " +
                     " a.sListngID " +
                     ", a.nEntryNox " +
-                    ",  a.sQuestion " +
+                    ",  a.nRatingxx " +
+                    ",  a.sRemarksx " +
                     ",  a.sReplyxxx " +
                     ",  a.nPriority " +
                     ",  a.sCreatedx " +
@@ -499,7 +420,7 @@ public class FAQuestions {
                 " WHERE b.sStockIDx = d.sStockIDx " +
                     " AND b.sCategrID IN('0002', '0004') " +
                     " AND " + lsCondition;
-        
+        System.out.println(lsSQL);
         return lsSQL;
     }
     
@@ -529,7 +450,7 @@ public class FAQuestions {
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
         
-        lsSQL = getSQ_Detail() + " HAVING a.sListngID = " + SQLUtil.toSQL(fsTransNox) + " AND a.nEntryNox = " + SQLUtil.toSQL(fsEntryNox);
+        lsSQL = getSQ_Detail() + " AND a.sListngID = " + SQLUtil.toSQL(fsTransNox) + " AND a.nEntryNox = " + SQLUtil.toSQL(fsEntryNox);
         
         //open master
         loRS = p_oApp.executeQuery(lsSQL);

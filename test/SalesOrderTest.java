@@ -54,13 +54,19 @@ public class SalesOrderTest {
     public void test01List() {
         try {
             if (trans.LoadList("", false)){//true if by barcode; false if by description
+                
+                 System.out.println();
                  System.out.println("---------- ORDER LIST ----------");
+                 System.out.println();
                 for (int lnCtr = 1; lnCtr <= trans.getItemCount(); lnCtr++){
+                   
                     System.out.println("No.: " + lnCtr);
                     System.out.println("TransNox: " + (String) trans.getMaster("sTransNox"));
                     System.out.println("Customer Name: " + (String) trans.getMaster("sCompnyNm"));
                     System.out.println("Total Amount: " + trans.getMaster("nTranTotl").toString());
                 }
+                
+                System.out.println();
             } else {
                 fail(trans.getMessage());
             }

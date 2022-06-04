@@ -78,11 +78,11 @@ public class ProductReviews {
         String lsSQL = "";
         
         if (fbByCode)
-            lsSQL = getSQ_Detail()+ " HAVING sCreatedx LIKE " + SQLUtil.toSQL(fsTransNox + "%");
+            lsSQL = getSQ_Master()+ " HAVING sCreatedx LIKE " + SQLUtil.toSQL(fsTransNox + "%");
         else
-            lsSQL = getSQ_Detail() + " HAVING sCompnyNm LIKE " + SQLUtil.toSQL(fsTransNox + "%");
+            lsSQL = getSQ_Master() + " HAVING sCompnyNm LIKE " + SQLUtil.toSQL(fsTransNox + "%");
 //        
-        ResultSet loRS = p_oApp.executeQuery(getSQ_Detail());
+        ResultSet loRS = p_oApp.executeQuery(getSQ_Master());
         if (MiscUtil.RecordCount(loRS) == 0){
             MiscUtil.close(loRS);
             p_sMessage = "No record found for the given criteria.";
@@ -327,7 +327,18 @@ public class ProductReviews {
     }
     public String getSQ_Master(){
         String lsSQL = "";
-                
+        String lsCondition = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            
+            lsCondition = "a.cRecdStat IN (" + lsSQL.substring(2) + ")";
+        } else 
+            lsCondition = "a.cRecdStat = " + SQLUtil.toSQL(lsStat);
+        
         lsSQL = "SELECT " +
                     " a.sListngID " +
                     ", a.nEntryNox " +
@@ -349,21 +360,16 @@ public class ProductReviews {
                     ",  '' xBrandNme " +
                     ",  '' xModelNme " +
                     ",  '' xColorNme " +
-                    ",  c.sDescript xCategrNm " +
-                    ",  b.sImagesxx " +
-                    ",  CONCAT(h.sFrstName, ' ', h.sMiddName,' ', h.sLastName) AS sCompnyNm " +
+                    ",  '' xCategrNm " +
+                    ",  '' sImagesxx " +
+                    ",  CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sCompnyNm " +
                 " FROM " + MASTER_TABLE + " a " +
-                    "  LEFT JOIN Client_Master h " +
-                    "    ON a.sCreatedx = h.sClientID " +
-                    "  LEFT JOIN MP_Inv_Master b " +
-                    "    ON a.sListngID = b.sListngID " +
-                    "  LEFT JOIN Inv_Category c " +
-                    "    ON b.sCategrID = c.sCategrID " +
-                    "  ORDER BY a.sTransNox DESC ";
-        
+                    "  LEFT JOIN Client_Master b " +
+                    "    ON a.sCreatedx = b.sClientID " +
+                " WHERE " + lsCondition;
+        System.out.println(lsSQL);
         return lsSQL;
     }
-    
     public String getSQ_Detail(){
         String lsSQL = "";
         String lsCondition = "";
@@ -449,7 +455,7 @@ public class ProductReviews {
         ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
         
-        lsSQL = getSQ_Detail() + " HAVING a.sListngID = " + SQLUtil.toSQL(fsTransNox) + " AND a.nEntryNox = " + SQLUtil.toSQL(fsEntryNox);
+        lsSQL = getSQ_Detail() + " AND a.sListngID = " + SQLUtil.toSQL(fsTransNox) + " AND a.nEntryNox = " + SQLUtil.toSQL(fsEntryNox);
         
         //open master
         loRS = p_oApp.executeQuery(lsSQL);

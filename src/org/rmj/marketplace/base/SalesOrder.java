@@ -168,12 +168,22 @@ public class SalesOrder {
             case 7:
             case 8:
             case 9:
+                if (foValue instanceof Double)
+                    p_oMaster.updateDouble(fnIndex, (double) foValue);
+                else 
+                    p_oMaster.updateDouble(fnIndex, 0.000);
+                
+                
+                p_oMaster.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
+                break;
             case 10:
                 if (foValue instanceof Integer)
                     p_oMaster.updateInt(fnIndex, (int) foValue);
                 else 
                     p_oMaster.updateInt(fnIndex, 0);
                 
+                p_oMaster.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
                 break;
         }
@@ -279,7 +289,7 @@ public class SalesOrder {
                     "  a.nUnitPrce, " +
                     "  a.sReferNox, " +
                     "  a.nIssuedxx " +
-                    "FROM sales_order_detail a " +
+                    "FROM "+DETAIL_TABLE+" a " +
                     "LEFT JOIN mp_inv_master b " +
                     "	ON a.sStockIDx = b.sListngID " +
                     "LEFT JOIN inv_category c " +
