@@ -163,7 +163,6 @@ public class FAQuestions {
        if ("1".equals((String) getMaster("cReadxxxx"))){
             return false;
         }
-        System.out.println("EntryNox = " + lsEntryNox);
         int lnCtr;
         int lnRow;
         String lsSQL;
@@ -217,8 +216,6 @@ public class FAQuestions {
         
         p_oMaster.first();
         
-        System.out.println("fnIndex = " + fnIndex);
-        System.out.println("foValue = " + foValue);
         switch (fnIndex){
             case 8:
             case 10: 
@@ -335,34 +332,38 @@ public class FAQuestions {
         } else 
             lsCondition = "a.cRecdStat = " + SQLUtil.toSQL(lsStat);
         
-        lsSQL = "SELECT " +
-                    " a.sListngID " +
-                    ", a.nEntryNox " +
-                    ",  a.sQuestion " +
-                    ",  a.sReplyxxx " +
-                    ",  a.nPriority " +
-                    ",  a.sCreatedx " +
-                    ",  a.dCreatedx " +
-                    ",  a.sRepliedx " +
-                    ",  a.dRepliedx " +
-                    ",  a.cReadxxxx " +
-                    ",  IFNULL(a.dReadxxxx, '') dReadxxxx" +
-                    ",  a.sReadxxxx " +
-                    ",  a.cRecdStat " +
-                    ",  a.dTimeStmp " +
-                    ",  '' xBarCodex " +
-                    ",  '' xDescript " +
-                    ",  '' xBrandNme " +
-                    ",  '' xModelNme " +
-                    ",  '' xColorNme " +
-                    ",  '' xCategrNm " +
-                    ",  '' sImagesxx " +
-                    ",  CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sCompnyNm " +
-                " FROM " + MASTER_TABLE + " a " +
+        lsSQL = "SELECT a.sListngID, " +
+                    " a.nEntryNox, " +
+                    " a.sQuestion, " +
+                    " a.sReplyxxx, " +
+                    " a.nPriority, " +
+                    " a.sCreatedx, " +
+                    " a.dCreatedx, " +
+                    " a.sRepliedx, " +
+                    " a.dRepliedx, " +
+                    " a.cReadxxxx,  " +
+                    " IFNULL(a.dReadxxxx, '')    dReadxxxx, " +
+                    " a.sReadxxxx, " +
+                    " a.cRecdStat, " +
+                    " a.dTimeStmp, " +
+                    " '' xBarCodex, " +
+                    " '' xDescript, " +
+                    " '' xBrandNme, " +
+                    " IFNULL(e.sModelNme, '')    xModelNme, " +
+                    " '' xColorNme, " +
+                    " '' xCategrNm, " +
+                    " '' sImagesxx, " +
+                    " CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sCompnyNm " +
+                "FROM mp_questions a " +
                     "  LEFT JOIN Client_Master b " +
-                    "    ON a.sCreatedx = b.sClientID " +
-                " WHERE " + lsCondition;
-        System.out.println(lsSQL);
+                    "	ON a.sCreatedx = b.sClientID " +
+                    "  LEFT JOIN mp_inv_master c " +
+                    "	ON a.sListngID = c.sListngID " +
+                    "  LEFT JOIN cp_inventory d  " +
+                    "	ON d.sStockIDx = c.sStockIDx " +
+                    "  LEFT JOIN CP_Model e " +
+                    "	ON e.sModelIDx = d.sModelIDx " +
+                "WHERE " + lsCondition; 
         return lsSQL;
     }
     public String getSQ_Detail(){
@@ -382,8 +383,7 @@ public class FAQuestions {
         lsSQL = "SELECT " +
                     " a.sListngID " +
                     ", a.nEntryNox " +
-                    ",  a.nRatingxx " +
-                    ",  a.sRemarksx " +
+                    ",  a.sQuestion " +
                     ",  a.sReplyxxx " +
                     ",  a.nPriority " +
                     ",  a.sCreatedx " +
@@ -420,7 +420,6 @@ public class FAQuestions {
                 " WHERE b.sStockIDx = d.sStockIDx " +
                     " AND b.sCategrID IN('0002', '0004') " +
                     " AND " + lsCondition;
-        System.out.println(lsSQL);
         return lsSQL;
     }
     
