@@ -61,9 +61,9 @@ public class SalesOrderTest {
                 for (int lnCtr = 1; lnCtr <= trans.getItemCount(); lnCtr++){
                    
                     System.out.println("No.: " + lnCtr);
-                    System.out.println("TransNox: " + (String) trans.getMaster("sTransNox"));
-                    System.out.println("Customer Name: " + (String) trans.getMaster("sCompnyNm"));
-                    System.out.println("Total Amount: " + trans.getMaster("nTranTotl").toString());
+                    System.out.println("TransNox: " + (String) trans.getDetail(lnCtr,"sTransNox"));
+                    System.out.println("Customer Name: " + (String) trans.getDetail(lnCtr,"sCompnyNm"));
+                    System.out.println("Total Amount: " + trans.getDetail(lnCtr,"nTranTotl").toString());
                 }
                 
                 System.out.println();
@@ -79,28 +79,96 @@ public class SalesOrderTest {
     @Test
     public void test02OpenTransaction(){
         try {
-            if (trans.OpenTransaction("MX0122000001")){
+            if (trans.OpenTransaction("MX0122000009")){
                 double ntotal = 0;
                 System.out.println();
                 System.out.println("---------- ORDER DETAIL ----------");
-                
-                for (int lnCtr = 1; lnCtr <= trans.getItemCount(); lnCtr++){
-                    System.out.println("No.: " + lnCtr);
-                    System.out.println("BarCode: " + (String) trans.getDetail(lnCtr,"xBarCodex"));
-                    System.out.println("Description: " + (String) trans.getDetail(lnCtr,"xDescript"));
-                    System.out.println("Brand Name: " + (String) trans.getDetail(lnCtr,"xBrandNme"));
-                    System.out.println("Model Name: " + (String) trans.getDetail(lnCtr,"xModelNme"));
-                    System.out.println("ColorName: " + (String) trans.getDetail(lnCtr,"xColorNme"));
-                    System.out.println("Unit Price: " + trans.getDetail(lnCtr,"nUnitPrce").toString());
-                    System.out.println("Quantity: " + trans.getDetail(lnCtr,"nQuantity").toString());
-                    ntotal += (Double.parseDouble(trans.getDetail(lnCtr,"nUnitPrce").toString())) * (Double.parseDouble(trans.getDetail(lnCtr,"nQuantity").toString()));
-                }
+                if(trans.LoadOrderDetail("MX0122000009", true)){
+                     for (int lnCtr = 1; lnCtr <= trans.getDetailItemCount(); lnCtr++){
+                        System.out.println("No.: " + lnCtr);
+                        System.out.println("BarCode: " + (String) trans.getDetail(lnCtr,"xBarCodex"));
+                        System.out.println("Description: " + (String) trans.getDetail(lnCtr,"xDescript"));
+                        System.out.println("Brand Name: " + (String) trans.getDetail(lnCtr,"xBrandNme"));
+                        System.out.println("Model Name: " + (String) trans.getDetail(lnCtr,"xModelNme"));
+                        System.out.println("ColorName: " + (String) trans.getDetail(lnCtr,"xColorNme"));
+                        System.out.println("Unit Price: " + trans.getDetail(lnCtr,"nUnitPrce").toString());
+                        System.out.println("Quantity: " + trans.getDetail(lnCtr,"nQuantity").toString());
+                        ntotal += (Double.parseDouble(trans.getDetail(lnCtr,"nUnitPrce").toString())) * (Double.parseDouble(trans.getDetail(lnCtr,"nQuantity").toString()));
+                    }
                 System.out.println();
                 System.out.println("Total Amount: " + ntotal);
+                }else{
+                    fail(trans.getMessage());
+                }
+               
             } else {
                 fail(trans.getMessage());
             }
         } catch (SQLException e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }
+    }
+    
+     @Test
+    public void test03PaymentProcessing(){
+        try {
+            
+            System.out.println();
+            System.out.println("---------- PAYMENT PROCESSING ----------");
+                
+           if (trans.OpenTransaction("MX0122000009")){
+                    for (int lnCtr = 1; lnCtr <= trans.getPaymentItemCount(); lnCtr++){
+                        System.out.println("No.: " + lnCtr);
+                        System.out.println("TransNox : " + trans.getPayment(lnCtr,"sTransNox").toString());
+                        System.out.println("Reference Code : " + trans.getPayment(lnCtr,"sReferCde").toString());
+                        System.out.println("Reference No : " + (String) trans.getPayment(lnCtr,"sReferNox"));
+                        System.out.println("Amount : " + trans.getPayment(lnCtr,"nAmountxx").toString());
+                        System.out.println("Date Transaction : " + trans.getPayment(lnCtr,"dTransact").toString());
+                        System.out.println("Remarks : " + (String) trans.getPayment(lnCtr,"sRemarksx"));
+                        System.out.println("TranStat : " + (String) trans.getPayment(lnCtr,"cTranStat"));
+
+                    }
+                }else{
+                    System.out.println(trans.getMessage());
+                }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }catch (NullPointerException e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }
+    }
+    
+    
+     @Test
+    public void test04SavePaymentProcessing(){
+       
+        try {
+            
+            System.out.println();
+            System.out.println("---------- SAVE PAYMENT PROCESSING ----------");
+            if(trans.OpenTransaction("MX0122000009")){
+                if(trans.UpdateTransaction()){
+                    trans.setPayment(1, "sRemarksx", "Save payment processing.");
+                    trans.setPayment(1, "cTranStat", 1);
+                     if(trans.SaveTransaction()){
+
+                    }else{
+                        System.out.println(trans.getMessage());
+                    } 
+                }else{
+                    System.out.println(trans.getMessage());
+                } 
+            }else{
+                System.out.println(trans.getMessage());
+            } 
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+        }catch (NullPointerException e) {
             e.printStackTrace();
             fail(e.getMessage());
         }
