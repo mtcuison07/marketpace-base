@@ -1,15 +1,13 @@
 
 import java.sql.SQLException;
-import org.json.simple.parser.ParseException;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.rmj.appdriver.GRider;
-import org.rmj.marketplace.base.LTransaction;
-import org.rmj.marketplace.base.ProductListing;
 import org.rmj.marketplace.base.FAQuestions;
+import org.rmj.marketplace.base.LTransaction;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -75,7 +73,7 @@ public class FAQuestionsTest {
     @Test
     public void test02OpenTransaction(){
         try {
-            if (trans.OpenTransaction("C00122000002", "1")){
+            if (trans.OpenTransaction("C00122000002", "2")){
                 System.out.println("Listing ID: " + (String) trans.getMaster("sListngID"));
                 System.out.println("Question : " + (String) trans.getMaster("sQuestion"));
                 System.out.println("Customer Name: " + trans.getMaster("sCompnyNm"));

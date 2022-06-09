@@ -26,6 +26,7 @@ import org.rmj.appdriver.constants.EditMode;
 public class SalesOrder {
     private final String MASTER_TABLE = "sales_order_master";
     private final String DETAIL_TABLE = "sales_order_detail";
+    private final String PAYMENT_TABLE = "other_payment_trans";
     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
@@ -39,6 +40,8 @@ public class SalesOrder {
     private boolean p_bWithUI = true;
 
     private CachedRowSet p_oMaster;
+    private CachedRowSet p_oDetail;
+    private CachedRowSet p_oPayment;
     private LTransaction p_oListener;
    
     public SalesOrder(GRider foApp, String fsBranchCd, boolean fbWithParent){        
@@ -75,14 +78,6 @@ public class SalesOrder {
         }
         
         p_sMessage = "";    
-        
-        String lsSQL = "";
-        
-        if (fbByCode)
-            lsSQL = getSQ_Master()+ " HAVING sTransNox LIKE " + SQLUtil.toSQL(fsTransNox + "%");
-        else
-            lsSQL = getSQ_Master() + " HAVING sCompnyNm LIKE " + SQLUtil.toSQL(fsTransNox + "%");
-//        
         ResultSet loRS = p_oApp.executeQuery(getSQ_Master());
         if (MiscUtil.RecordCount(loRS) == 0){
             MiscUtil.close(loRS);
@@ -116,8 +111,8 @@ public class SalesOrder {
         }
         
         RowSetFactory factory = RowSetProvider.newFactory();
-        p_oMaster = factory.createCachedRowSet();
-        p_oMaster.populate(loRS);
+        p_oDetail = factory.createCachedRowSet();
+        p_oDetail.populate(loRS);
         MiscUtil.close(loRS);
         
         return true;
@@ -168,12 +163,22 @@ public class SalesOrder {
             case 7:
             case 8:
             case 9:
+                if (foValue instanceof Double)
+                    p_oMaster.updateDouble(fnIndex, (double) foValue);
+                else 
+                    p_oMaster.updateDouble(fnIndex, 0.000);
+                
+                
+                p_oMaster.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
+                break;
             case 10:
                 if (foValue instanceof Integer)
                     p_oMaster.updateInt(fnIndex, (int) foValue);
                 else 
                     p_oMaster.updateInt(fnIndex, 0);
                 
+                p_oMaster.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
                 break;
         }
@@ -202,6 +207,11 @@ public class SalesOrder {
         return p_oMaster.getRow();
     }
     
+    public int getDetailItemCount() throws SQLException{
+        p_oDetail.last();
+        return p_oDetail.getRow();
+    }
+    
     public void displayMasFields() throws SQLException{
         if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) return;
         
@@ -226,6 +236,117 @@ public class SalesOrder {
         System.out.println("----------------------------------------");
         System.out.println("END: MASTER TABLE INFO");
         System.out.println("----------------------------------------");
+    } 
+    
+    public int getPaymentItemCount() throws SQLException{
+        p_oPayment.last();
+        return p_oPayment.getRow();
+    }
+    
+    public Object getPayment(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        if (getPaymentItemCount() == 0 || fnRow > getPaymentItemCount()) return null;   
+       
+        p_oPayment.absolute(fnRow);
+        return p_oPayment.getObject(fnIndex);
+        
+    }
+    
+    public Object getPayment(int fnRow, String fsIndex) throws SQLException{
+        return getPayment(fnRow, getColumnIndex(p_oPayment, fsIndex));
+    }
+    
+    public void setPayment(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setPayment(fnRow, getColumnIndex(p_oPayment, fsIndex), foValue);
+    }
+    
+    public void setPayment(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
+            System.out.println("Invalid Edit Mode Detected.");
+            return;
+        }
+        //p_oPayment.first();
+        p_oPayment.absolute(fnRow);
+        
+        switch (fnIndex){
+            case 6: //sRemarksx
+                p_oPayment.updateString(fnIndex, (String) foValue);
+                p_oPayment.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oPayment.getString(fnIndex));
+                break;
+            case 9:
+                if (foValue instanceof Integer){
+                    p_oPayment.updateInt(fnIndex, (int) foValue);
+                    p_oPayment.updateRow();
+                }                
+                
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oPayment.getString(fnIndex));
+                break;
+            case 10:
+                if (foValue instanceof Date){
+                    p_oPayment.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
+                } else
+                    p_oPayment.updateDate(fnIndex, SQLUtil.toDate(p_oApp.getServerDate()));
+                
+                p_oPayment.updateRow();
+                
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oPayment.getString(fnIndex));
+                break;
+        }
+    }
+    private boolean loadPayment(String fsTransNox) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";    
+        
+        String lsSQL = getSQ_Payment()+ " AND sSourceNo = " + SQLUtil.toSQL(fsTransNox);
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) == 0){
+            MiscUtil.close(loRS);
+            p_sMessage = "No record found for the given criteria.";
+            return false;
+        }
+        
+        RowSetFactory factory = RowSetProvider.newFactory();
+        p_oPayment = factory.createCachedRowSet();
+        p_oPayment.populate(loRS);
+        MiscUtil.close(loRS);
+        return true;
+    }
+    
+    private boolean isEntryOK() throws SQLException{           
+        //validate master               
+        if ("".equals((String) getMaster("sTransNox"))){
+            p_sMessage = "No order was selected to list.";
+            return false;
+        }
+        
+        if ("".equals((String) getMaster("sRemarksx"))){
+            p_sMessage = "Payment remarks is not set.";
+            return false;
+        }
+        
+        return true;
+    }
+    public String getSQ_Payment(){
+        String lsSQL = "";
+        lsSQL = "SELECT " +
+                "  sTransNox" +
+                ", IFNULL(dTransact, '') dTransact" +
+                ", sReferCde" +
+                ", sReferNox" +
+                ", nAmountxx" +
+                ", IFNULL(sRemarksx, '') sRemarksx" +
+                ", sSourceCd" +
+                ", sSourceNo" +
+                ", cTranStat" +
+                ", IFNULL(dModified, '') dModified" +
+                "  FROM " + PAYMENT_TABLE +
+                " WHERE sSourceCD = 'MPSO' ";
+        return lsSQL;
     }
     public String getSQ_Master(){
         String lsSQL = "";
@@ -279,7 +400,7 @@ public class SalesOrder {
                     "  a.nUnitPrce, " +
                     "  a.sReferNox, " +
                     "  a.nIssuedxx " +
-                    "FROM sales_order_detail a " +
+                    "FROM "+DETAIL_TABLE+" a " +
                     "LEFT JOIN mp_inv_master b " +
                     "	ON a.sStockIDx = b.sListngID " +
                     "LEFT JOIN inv_category c " +
@@ -292,8 +413,6 @@ public class SalesOrder {
                     "	ON d.sModelIDx = f.sModelIDx " +
                     "LEFT JOIN color g " +
                     "	ON d.sColorIDx = g.sColorIDx";
-    
-        
         return lsSQL;
     }
     
@@ -309,6 +428,61 @@ public class SalesOrder {
         }
         
         return lnIndex;
+    }
+    public boolean SaveTransaction() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (p_nEditMode != EditMode.ADDNEW &&
+            p_nEditMode != EditMode.UPDATE){
+            p_sMessage = "Invalid edit mode detected.";
+            return false;
+        }
+        
+        if (!isEntryOK()) return false;
+        
+        int lnCtr;
+        int lnRow;
+        String lsSQL;
+        
+        lnRow = getPaymentItemCount();
+        
+        for (lnCtr = 1; lnCtr <= lnRow; lnRow++){
+            setPayment(lnCtr, "dModified", p_oApp.getServerDate());
+            String transNox = (String)getPayment(lnCtr, "sTransNox");
+            p_oPayment.updateRow();
+            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
+                                        PAYMENT_TABLE, 
+                                        "",
+                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
+                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")) );
+            if (!lsSQL.isEmpty()){
+                if (!p_bWithParent) p_oApp.beginTrans();
+                if (!lsSQL.isEmpty()){
+                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
+                        if (!p_bWithParent) p_oApp.rollbackTrans();
+                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                        return false;
+                    }
+                }
+                if (!p_bWithParent) p_oApp.commitTrans();
+
+                p_nEditMode = EditMode.UNKNOWN;
+                return true;
+            } else{
+                p_sMessage = "No record to save.";
+                return false;
+            }
+        }
+        
+            
+        //set transaction number on records
+        
+        return true;
     }
     
     public boolean SearchTransaction(String fsValue, boolean fbByCode) throws SQLException{
@@ -326,9 +500,9 @@ public class SalesOrder {
                                 p_oApp, 
                                 getSQ_Master(), 
                                 fsValue, 
-                                "Order No.»Customer Name»Total Amount", 
-                                "sTransNox»sCompnyNm»nTranTotl", 
-                                "sTransNox»sCompnyNm»nTranTotl", 
+                                "Order No.»Customer Name", 
+                                "sTransNox»sCompnyNm", 
+                                "sTransNox»sCompnyNm", 
                                 fbByCode ? 0 : 1);
             
             if (loJSON != null) 
@@ -389,11 +563,45 @@ public class SalesOrder {
             p_sMessage = "No transaction was loaded.";
             return false;
         }
+        
+        loadPayment(fsTransNox);
+        
         p_nEditMode = EditMode.READY;
         
         return true;
     }
-    
+//     public boolean OpenPayment(String fsTransNox) throws SQLException{
+//        p_nEditMode = EditMode.UNKNOWN;
+//        
+//        if (p_oApp == null){
+//            p_sMessage = "Application driver is not set.";
+//            return false;
+//        }
+//        
+//        
+//        p_sMessage = "";
+//        String lsSQL;
+//        ResultSet loRS;
+//        RowSetFactory factory = RowSetProvider.newFactory();
+//        
+//        lsSQL = getSQ_Payment() + " AND sTransNox = " + SQLUtil.toSQL(fsTransNox);
+//        
+//        //open master
+//        loRS = p_oApp.executeQuery(lsSQL);
+//        p_oPayment = factory.createCachedRowSet();
+//        p_oPayment.populate(loRS);
+//        MiscUtil.close(loRS);
+//        
+//        p_oPayment.last();
+//        if (p_oPayment.getRow() <= 0) {
+//            p_sMessage = "No transaction was loaded.";
+//            return false;
+//        }
+//        p_nEditMode = EditMode.READY;
+//        
+//        return true;
+//    }
+//    
     public boolean UpdateTransaction() throws SQLException{
         if (p_nEditMode != EditMode.READY){
             p_sMessage = "Invalid edit mode.";
