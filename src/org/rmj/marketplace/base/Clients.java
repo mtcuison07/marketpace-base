@@ -20,6 +20,8 @@ import org.rmj.appdriver.constants.EditMode;
 public class Clients {
     private final String MASTER_TABLE = "App_User_Master";
     private final String CLIENT_TABLE = "Client_Master";
+    private final String ORDER_MASTER_TABLE = "sales_order_master";
+    private final String ORDER_DETAIL_TABLE = "sales_order_detail";
     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
@@ -34,6 +36,8 @@ public class Clients {
 
     private CachedRowSet p_oMaster;
     private CachedRowSet p_oDetail;
+    private CachedRowSet p_oOrder;
+    private CachedRowSet p_oOrderDetail;
     private LTransaction p_oListener;
    
     public Clients(GRider foApp, String fsBranchCd, boolean fbWithParent){        
@@ -217,6 +221,36 @@ public class Clients {
         p_oDetail.last();
         return p_oDetail.getRow();
     }
+    public Object getOrder(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oOrder.absolute(fnRow);
+        return p_oOrder.getObject(fnIndex);
+    }
+    
+    public Object getOrder(int fnRow, String fsIndex) throws SQLException{
+        return getOrder(fnRow, getColumnIndex(p_oOrder, fsIndex));
+    }
+    
+    public int getOrderItemCount() throws SQLException{
+        p_oOrder.last();
+        return p_oOrder.getRow();
+    }
+    public Object getDetailOrder(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oOrderDetail.absolute(fnRow);
+        return p_oOrderDetail.getObject(fnIndex);
+    }
+    
+    public Object getDetailOrder(int fnRow, String fsIndex) throws SQLException{
+        return getDetailOrder(fnRow, getColumnIndex(p_oOrderDetail, fsIndex));
+    }
+    
+    public int getOrderDetailItemCount() throws SQLException{
+        p_oOrderDetail.last();
+        return p_oOrderDetail.getRow();
+    }
     
     public void displayMasFields() throws SQLException{
         if (p_nEditMode != EditMode.ADDNEW && 
@@ -270,13 +304,111 @@ public class Clients {
                     ", IFNULL(c.sTownName, '') xTownName" + 
                     ", IFNULL(d.sTownName, '') xBirthPlc" +
                     ", IFNULL(e.sBrgyName, '') xBrgyName" + 
+                    ", IFNULL(f.sNational, '') xNational" + 
                 " FROM App_User_Master a" +
-                    ", Client_Master b" +
+                    ", "+ CLIENT_TABLE +" b" +
                         " LEFT JOIN TownCity c ON b.sTownIDxx = c.sTownIDxx" +
                         " LEFT JOIN TownCity d ON b.sBirthPlc = d.sTownIDxx" +
                         " LEFT JOIN Barangay e ON b.sBrgyIDxx = e.sBrgyIDxx" +
+                        " LEFT JOIN Country f ON b.sCitizenx = f.sCntryCde" +
+                      
                 " WHERE a.sEmployNo = b.sClientID" +
                     " AND a.sProdctID = 'GuanzonApp'";
+    }
+    
+     private String getSQ_OrderMaster(){
+        return "SELECT " +
+                "  sTransNox," +
+                "  dTransact, " +
+                "  sTermCode," +
+                "  nTranTotl," +
+                "  nVATRatex," +
+                "  nDiscount," +
+                "  nAddDiscx," +
+                "  nFreightx," +
+                "  nAmtPaidx," +
+                "  cTranStat," +
+                "  sRemarksx" +
+                "  FROM " + ORDER_MASTER_TABLE +
+                " WHERE cTranStat = 2 ";
+         
+    }
+    public boolean LoadOrder(String fsCLientID) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";    
+        String lsSQL = "";
+        lsSQL = getSQ_OrderMaster()+ " AND sClientID = " + SQLUtil.toSQL(fsCLientID);
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) == 0){
+            MiscUtil.close(loRS);
+            p_sMessage = "No record found for the given criteria.";
+            return false;
+        }
+        
+        RowSetFactory factory = RowSetProvider.newFactory();
+        p_oOrder = factory.createCachedRowSet();
+        p_oOrder.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        return true;
+    }
+    public boolean LoadOrderDetail(String fsTransNox) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";    
+        
+        String lsSQL = "";
+        lsSQL = getSQ_OrderDetail()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(fsTransNox);
+       
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) == 0){
+            MiscUtil.close(loRS);
+            p_sMessage = "No record found for the given criteria.";
+            return false;
+        }
+        
+        RowSetFactory factory = RowSetProvider.newFactory();
+        p_oOrderDetail = factory.createCachedRowSet();
+        p_oOrderDetail.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        return true;
+    }
+     
+    private String getSQ_OrderDetail(){
+        return "SELECT " +
+                    "  a.sTransNox, " +
+                    "  IFNULL(d.sBarrcode, '') xBarCodex, " +
+                    "  IFNULL(d.sDescript, '') xDescript, " +
+                    "  IFNULL(e.sBrandNme, '') xBrandNme, " +
+                    "  IFNULL(f.sModelNme, '') xModelNme, " +
+                    "  IFNULL(g.sColorNme, '') xColorNme, " +
+                    "  a.nEntryNox, " +
+                    "  a.nQuantity, " +
+                    "  a.nUnitPrce, " +
+                    "  a.sReferNox, " +
+                    "  a.nIssuedxx " +
+                    "FROM " + ORDER_DETAIL_TABLE + " a " +
+                    "LEFT JOIN mp_inv_master b " +
+                    "	ON a.sStockIDx = b.sListngID " +
+                    "LEFT JOIN inv_category c " +
+                    "	ON b.sCategrID = c.sCategrID " +
+                    "LEFT JOIN  CP_Inventory d " +
+                    "	ON d.sStockIDx = a.sStockIDx " +
+                    "LEFT JOIN CP_Brand e " +
+                    "	ON d.sBrandIDx = e.sBrandIDx " +
+                    "LEFT JOIN CP_Model f " +
+                    "	ON d.sModelIDx = f.sModelIDx " +
+                    "LEFT JOIN color g " +
+                    "	ON d.sColorIDx = g.sColorIDx";
+         
     }
     
     private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{

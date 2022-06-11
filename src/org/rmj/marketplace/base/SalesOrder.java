@@ -239,12 +239,15 @@ public class SalesOrder {
     } 
     
     public int getPaymentItemCount() throws SQLException{
+        if (p_oPayment == null) return 0;
+        
         p_oPayment.last();
         return p_oPayment.getRow();
     }
     
     public Object getPayment(int fnRow, int fnIndex) throws SQLException{
-        if (fnIndex == 0) return null;
+        if (getPaymentItemCount()  == 0) return null;
+        
         if (getPaymentItemCount() == 0 || fnRow > getPaymentItemCount()) return null;   
        
         p_oPayment.absolute(fnRow);
@@ -301,17 +304,19 @@ public class SalesOrder {
         }
         
         p_sMessage = "";    
-        
+        System.out.println();
         String lsSQL = getSQ_Payment()+ " AND sSourceNo = " + SQLUtil.toSQL(fsTransNox);
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        RowSetFactory factory = RowSetProvider.newFactory();
+        p_oPayment = factory.createCachedRowSet();
+        
         if (MiscUtil.RecordCount(loRS) == 0){
             MiscUtil.close(loRS);
             p_sMessage = "No record found for the given criteria.";
             return false;
         }
         
-        RowSetFactory factory = RowSetProvider.newFactory();
-        p_oPayment = factory.createCachedRowSet();
         p_oPayment.populate(loRS);
         MiscUtil.close(loRS);
         return true;
@@ -334,15 +339,15 @@ public class SalesOrder {
     public String getSQ_Payment(){
         String lsSQL = "";
         lsSQL = "SELECT " +
-                "  sTransNox" +
+                "  IFNULL(sTransNox, '') sTransNox" +
                 ", IFNULL(dTransact, '') dTransact" +
-                ", sReferCde" +
-                ", sReferNox" +
-                ", nAmountxx" +
+                ", IFNULL(sReferCde, '') sReferCde" +
+                ", IFNULL(sReferNox, '') sReferNox" +
+                ", IFNULL(nAmountxx, '') nAmountxx" +
                 ", IFNULL(sRemarksx, '') sRemarksx" +
-                ", sSourceCd" +
-                ", sSourceNo" +
-                ", cTranStat" +
+                ", IFNULL(sSourceCd, '') sSourceCd" +
+                ", IFNULL(sSourceNo, '') sSourceNo" +
+                ", IFNULL(cTranStat, '') cTranStat" +
                 ", IFNULL(dModified, '') dModified" +
                 "  FROM " + PAYMENT_TABLE +
                 " WHERE sSourceCD = 'MPSO' ";
@@ -442,6 +447,7 @@ public class SalesOrder {
             p_sMessage = "Invalid edit mode detected.";
             return false;
         }
+        
         
         if (!isEntryOK()) return false;
         
