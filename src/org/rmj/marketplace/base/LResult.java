@@ -9,6 +9,6 @@ package org.rmj.marketplace.base;
  * @author User
  */
 public interface LResult {
-    void OnSave();
-    void OnCancel();
+    void OnSave(String message);
+    void OnCancel(String message);
 }

@@ -5,6 +5,7 @@ import static org.junit.Assert.fail;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.rmj.appdriver.GRider;
+import org.rmj.marketplace.base.LResult;
 import org.rmj.marketplace.base.LTransaction;
 import org.rmj.marketplace.base.SalesOrder;
 
@@ -21,6 +22,7 @@ public class SalesOrderTest {
     static GRider instance = new GRider();
     static SalesOrder trans;
     static LTransaction listener;
+    static LResult olistener;
     
     public SalesOrderTest() {
     }
@@ -38,6 +40,17 @@ public class SalesOrderTest {
                 System.out.println(fnIndex + "-->" + foValue);
             }
 
+        };
+        olistener = new LResult() {
+            @Override
+            public void OnSave(String message) {
+                System.out.println("OnSave --> " + message);
+            }
+
+            @Override
+            public void OnCancel(String message) {
+                System.out.println("OnCancel --> " + message);
+            }
         };
         trans = new SalesOrder(instance, instance.getBranchCode(), false);
         trans.setListener(listener);
@@ -79,11 +92,11 @@ public class SalesOrderTest {
     @Test
     public void test02OpenTransaction(){
         try {
-            if (trans.OpenTransaction("MX0122000001")){
+            if (trans.OpenTransaction("MX0122000009")){
                 double ntotal = 0;
                 System.out.println();
                 System.out.println("---------- ORDER DETAIL ----------");
-                if(trans.LoadOrderDetail("MX0122000001", true)){
+                if(trans.LoadOrderDetail("MX0122000009", true)){
                      for (int lnCtr = 1; lnCtr <= trans.getDetailItemCount(); lnCtr++){
                         System.out.println("No.: " + lnCtr);
                         System.out.println("BarCode: " + (String) trans.getDetail(lnCtr,"xBarCodex"));
@@ -117,21 +130,26 @@ public class SalesOrderTest {
             System.out.println();
             System.out.println("---------- PAYMENT PROCESSING ----------");
            
-           if (trans.OpenTransaction("MX0122000001")){
-               System.out.println("count.: " +trans.getPaymentItemCount());
-                for (int lnCtr = 1; lnCtr <= trans.getPaymentItemCount(); lnCtr++){
-                    System.out.println("No.: " + lnCtr);
-                    System.out.println("TransNox : " + trans.getPayment(lnCtr,"sTransNox").toString());
-                    System.out.println("Reference Code : " + trans.getPayment(lnCtr,"sReferCde").toString());
-                    System.out.println("Reference No : " + (String) trans.getPayment(lnCtr,"sReferNox"));
-                    System.out.println("Amount : " + trans.getPayment(lnCtr,"nAmountxx").toString());
-                    System.out.println("Date Transaction : " + trans.getPayment(lnCtr,"dTransact").toString());
-                    System.out.println("Remarks : " + (String) trans.getPayment(lnCtr,"sRemarksx"));
-                    System.out.println("TranStat : " + (String) trans.getPayment(lnCtr,"cTranStat"));
-
-                }
+           if (trans.OpenTransaction("MX0122000009")){
+               if(trans.getPaymentItemCount() > 0){
+                    for (int lnCtr = 1; lnCtr <= trans.getPaymentItemCount(); lnCtr++){
+                        System.out.println("No.: " + lnCtr);
+                        System.out.println("TransNox : " + trans.getPayment(lnCtr,"sTransNox").toString());
+                        System.out.println("Reference Code : " + trans.getPayment(lnCtr,"sReferCde").toString());
+                        System.out.println("Reference No : " + (String) trans.getPayment(lnCtr,"sReferNox"));
+                        System.out.println("Amount : " + trans.getPayment(lnCtr,"nAmountxx").toString());
+                        System.out.println("Date Transaction : " + trans.getPayment(lnCtr,"dTransact").toString());
+                        System.out.println("Remarks : " + (String) trans.getPayment(lnCtr,"sRemarksx"));
+                        System.out.println("TranStat : " + (String) trans.getPayment(lnCtr,"cTranStat"));
+                    }
+               }else{
+                    System.out.println(trans.getMessage());
+//                    fail(trans.getMessage());
+               }
+                
             }else{
                 System.out.println(trans.getMessage());
+                fail(trans.getMessage());
             }
         } catch (SQLException e) {
             e.printStackTrace();

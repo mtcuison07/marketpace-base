@@ -115,10 +115,12 @@ public class ClientLoad {
                         System.out.println("Total Amount: " + trans.getOrder(lnCtr,"nTranTotl").toString());
                     }
                 }else{
-                    fail(trans.getMessage());
+                    System.out.println(trans.getMessage());
+//                    fail(trans.getMessage());
                 }
             } else
-                fail(trans.getMessage());
+                    System.out.println(trans.getMessage());
+//                    fail(trans.getMessage());
         } catch (SQLException e) {
             fail(e.getMessage());
         }   
@@ -149,13 +151,16 @@ public class ClientLoad {
                         System.out.println();
                         System.out.println("Total Amount: " + ntotal);
                     }else{
-                        fail(trans.getMessage());
+                    System.out.println(trans.getMessage());
+//                    fail(trans.getMessage());
                     }
                 }else{
-                    fail(trans.getMessage());
+                    System.out.println(trans.getMessage());
+//                    fail(trans.getMessage());
                 }
             } else
-                fail(trans.getMessage());
+                    System.out.println(trans.getMessage());
+//                    fail(trans.getMessage());
         } catch (SQLException e) {
             fail(e.getMessage());
         }   catch (NullPointerException e) {
