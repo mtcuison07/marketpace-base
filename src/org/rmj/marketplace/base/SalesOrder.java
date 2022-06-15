@@ -43,6 +43,7 @@ public class SalesOrder {
     private CachedRowSet p_oDetail;
     private CachedRowSet p_oPayment;
     private LTransaction p_oListener;
+    private LResult p_oResult;
    
     public SalesOrder(GRider foApp, String fsBranchCd, boolean fbWithParent){        
         p_oApp = foApp;
@@ -61,6 +62,10 @@ public class SalesOrder {
    
     public void setListener(LTransaction foValue){
         p_oListener = foValue;
+    }
+    
+    public void setListener(LResult foValue){
+        p_oResult = foValue;
     }
     
     public void setWithUI(boolean fbValue){
@@ -322,14 +327,14 @@ public class SalesOrder {
         return true;
     }
     
-    private boolean isEntryOK() throws SQLException{           
+    private boolean isEntryOK(int lnRow) throws SQLException{           
         //validate master               
-        if ("".equals((String) getMaster("sTransNox"))){
+        if ("".equals((String) getPayment(lnRow,"sTransNox"))){
             p_sMessage = "No order was selected to list.";
             return false;
         }
         
-        if ("".equals((String) getMaster("sRemarksx"))){
+        if ("".equals((String) getPayment(lnRow,"sRemarksx"))){
             p_sMessage = "Payment remarks is not set.";
             return false;
         }
@@ -449,7 +454,6 @@ public class SalesOrder {
         }
         
         
-        if (!isEntryOK()) return false;
         
         int lnCtr;
         int lnRow;
@@ -458,9 +462,12 @@ public class SalesOrder {
         lnRow = getPaymentItemCount();
         
         for (lnCtr = 1; lnCtr <= lnRow; lnRow++){
-            setPayment(lnCtr, "dModified", p_oApp.getServerDate());
+            setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
             String transNox = (String)getPayment(lnCtr, "sTransNox");
-            p_oPayment.updateRow();
+            
+            if (!isEntryOK(lnCtr)) return false;
+//            p_oPayment.updateObject("dModified", p_oApp.getServerDate().toString());
+//            p_oPayment.updateRow();
             lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
                                         PAYMENT_TABLE, 
                                         "",
@@ -476,8 +483,10 @@ public class SalesOrder {
                     }
                 }
                 if (!p_bWithParent) p_oApp.commitTrans();
-
+                
                 p_nEditMode = EditMode.UNKNOWN;
+                
+                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
                 return true;
             } else{
                 p_sMessage = "No record to save.";
@@ -576,38 +585,7 @@ public class SalesOrder {
         
         return true;
     }
-//     public boolean OpenPayment(String fsTransNox) throws SQLException{
-//        p_nEditMode = EditMode.UNKNOWN;
-//        
-//        if (p_oApp == null){
-//            p_sMessage = "Application driver is not set.";
-//            return false;
-//        }
-//        
-//        
-//        p_sMessage = "";
-//        String lsSQL;
-//        ResultSet loRS;
-//        RowSetFactory factory = RowSetProvider.newFactory();
-//        
-//        lsSQL = getSQ_Payment() + " AND sTransNox = " + SQLUtil.toSQL(fsTransNox);
-//        
-//        //open master
-//        loRS = p_oApp.executeQuery(lsSQL);
-//        p_oPayment = factory.createCachedRowSet();
-//        p_oPayment.populate(loRS);
-//        MiscUtil.close(loRS);
-//        
-//        p_oPayment.last();
-//        if (p_oPayment.getRow() <= 0) {
-//            p_sMessage = "No transaction was loaded.";
-//            return false;
-//        }
-//        p_nEditMode = EditMode.READY;
-//        
-//        return true;
-//    }
-//    
+    
     public boolean UpdateTransaction() throws SQLException{
         if (p_nEditMode != EditMode.READY){
             p_sMessage = "Invalid edit mode.";
