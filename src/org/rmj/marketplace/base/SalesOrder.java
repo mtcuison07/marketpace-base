@@ -334,10 +334,10 @@ public class SalesOrder {
             return false;
         }
         
-        if ("".equals((String) getPayment(lnRow,"sRemarksx"))){
-            p_sMessage = "Payment remarks is not set.";
-            return false;
-        }
+//        if ("".equals((String) getPayment(lnRow,"sRemarksx"))){
+//            p_sMessage = "Payment remarks is not set.";
+//            return false;
+//        }
         
         return true;
     }
@@ -455,13 +455,14 @@ public class SalesOrder {
         
         
         
-        int lnCtr;
+        int lnCtr = 1;
         int lnRow;
         String lsSQL;
         
         lnRow = getPaymentItemCount();
-        
-        for (lnCtr = 1; lnCtr <= lnRow; lnRow++){
+        System.out.println("payment count = " +getPaymentItemCount());
+        while(lnCtr <= lnRow ){
+            System.out.println("payment counter = " +lnCtr);
             setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
             String transNox = (String)getPayment(lnCtr, "sTransNox");
             
@@ -472,8 +473,10 @@ public class SalesOrder {
                                         PAYMENT_TABLE, 
                                         "",
                                         " sTransNox = " + SQLUtil.toSQL(transNox) 
-                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")) );
+                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
+            
             if (!lsSQL.isEmpty()){
+                
                 if (!p_bWithParent) p_oApp.beginTrans();
                 if (!lsSQL.isEmpty()){
                     if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
@@ -482,17 +485,44 @@ public class SalesOrder {
                         return false;
                     }
                 }
-                if (!p_bWithParent) p_oApp.commitTrans();
                 
                 p_nEditMode = EditMode.UNKNOWN;
                 
+                if (!p_bWithParent) p_oApp.commitTrans();
                 if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
                 return true;
-            } else{
-                p_sMessage = "No record to save.";
-                return false;
             }
+            lnCtr++;
         }
+//        for (lnCtr = 1; lnCtr <= lnRow; lnRow++){
+//            System.out.println("payment counter = " +lnCtr);
+//            setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
+//            String transNox = (String)getPayment(lnCtr, "sTransNox");
+//            
+//            if (!isEntryOK(lnCtr)) return false;
+////            p_oPayment.updateObject("dModified", p_oApp.getServerDate().toString());
+////            p_oPayment.updateRow();
+//            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
+//                                        PAYMENT_TABLE, 
+//                                        "",
+//                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
+//                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
+//            
+//            if (!lsSQL.isEmpty()){
+//                if (!lsSQL.isEmpty()){
+//                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
+//                        if (!p_bWithParent) p_oApp.rollbackTrans();
+//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+//                        return false;
+//                    }
+//                }
+//                
+//                p_nEditMode = EditMode.UNKNOWN;
+//                
+//                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
+//                return true;
+//            }
+//        }
         
             
         //set transaction number on records

@@ -4,16 +4,8 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group name="guanzon"/>
         <group>
-            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/LTransaction.java</file>
-            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/LResult.java</file>
-            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/OrderIssuance.java</file>
-            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/test/SalesOrderTest.java</file>
             <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/Clients.java</file>
-            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/test/ClientLoad.java</file>
-            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/LTranDet.java</file>
             <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/SalesOrder.java</file>
-            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/ProductReviews.java</file>
-            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/test/ProductListingUpdate.java</file>
         </group>
     </open-files>
 </project-private>

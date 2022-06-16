@@ -37,7 +37,6 @@ public class Clients {
     private CachedRowSet p_oMaster;
     private CachedRowSet p_oDetail;
     private CachedRowSet p_oOrder;
-    private CachedRowSet p_oOrderDetail;
     private LTransaction p_oListener;
    
     public Clients(GRider foApp, String fsBranchCd, boolean fbWithParent){        
@@ -239,17 +238,17 @@ public class Clients {
     public Object getDetailOrder(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
-        p_oOrderDetail.absolute(fnRow);
-        return p_oOrderDetail.getObject(fnIndex);
+        p_oOrder.absolute(fnRow);
+        return p_oOrder.getObject(fnIndex);
     }
     
     public Object getDetailOrder(int fnRow, String fsIndex) throws SQLException{
-        return getDetailOrder(fnRow, getColumnIndex(p_oOrderDetail, fsIndex));
+        return getDetailOrder(fnRow, getColumnIndex(p_oOrder, fsIndex));
     }
     
     public int getOrderDetailItemCount() throws SQLException{
-        p_oOrderDetail.last();
-        return p_oOrderDetail.getRow();
+        p_oOrder.last();
+        return p_oOrder.getRow();
     }
     
     public void displayMasFields() throws SQLException{
@@ -375,8 +374,8 @@ public class Clients {
         }
         
         RowSetFactory factory = RowSetProvider.newFactory();
-        p_oOrderDetail = factory.createCachedRowSet();
-        p_oOrderDetail.populate(loRS);
+        p_oOrder = factory.createCachedRowSet();
+        p_oOrder.populate(loRS);
         MiscUtil.close(loRS);
         
         return true;
