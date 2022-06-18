@@ -370,9 +370,9 @@ public class ProductListing {
         String lsSQL = "";
         
         if (fbByCode)
-            lsSQL = getSQ_Detail() + " HAVING xBarrCode LIKE " + SQLUtil.toSQL(fsValue + "%");
+            lsSQL = getSQ_Detail() + " HAVING xBarrCode LIKE " + SQLUtil.toSQL(fsValue + "%") + " ORDER BY a.dCreatedx ASC";
         else
-            lsSQL = getSQ_Detail() + " HAVING xDescript LIKE " + SQLUtil.toSQL(fsValue + "%");
+            lsSQL = getSQ_Detail() + " HAVING xDescript LIKE " + SQLUtil.toSQL(fsValue + "%") + " ORDER BY a.dCreatedx ASC";
         
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
     
