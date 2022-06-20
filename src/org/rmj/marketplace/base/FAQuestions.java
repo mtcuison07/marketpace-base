@@ -220,7 +220,7 @@ public class FAQuestions {
             case 8:
             case 10: 
             case 12: 
-            case 15: 
+            case 14: 
                 if (foValue instanceof Date){
                     p_oMaster.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
                 } else
@@ -231,20 +231,19 @@ public class FAQuestions {
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
                 break;
             case 1: 
+            case 3: 
             case 4:
             case 5: 
             case 7:
             case 9:
             case 11:
-            case 13:
                 p_oMaster.updateString(fnIndex, (String) foValue);
                 p_oMaster.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
                 break;
             case 2: 
-            case 3: 
             case 6:
-            case 14:
+            case 13:
                 if (foValue instanceof Integer)
                     p_oMaster.updateInt(fnIndex, (int) foValue);
                 else 
@@ -332,31 +331,34 @@ public class FAQuestions {
         } else 
             lsCondition = "a.cRecdStat = " + SQLUtil.toSQL(lsStat);
         
-        lsSQL = "SELECT a.sListngID, " +
-                    " a.nEntryNox, " +
-                    " a.sQuestion, " +
-                    " a.sReplyxxx, " +
-                    " a.nPriority, " +
-                    " a.sCreatedx, " +
-                    " a.dCreatedx, " +
-                    " a.sRepliedx, " +
-                    " a.dRepliedx, " +
-                    " a.cReadxxxx,  " +
-                    " IFNULL(a.dReadxxxx, '')    dReadxxxx, " +
-                    " a.sReadxxxx, " +
-                    " a.cRecdStat, " +
-                    " a.dTimeStmp, " +
-                    " '' xBarCodex, " +
-                    " '' xDescript, " +
-                    " '' xBrandNme, " +
-                    " IFNULL(e.sModelNme, '')    xModelNme, " +
-                    " '' xColorNme, " +
-                    " '' xCategrNm, " +
-                    " '' sImagesxx, " +
-                    " CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sCompnyNm " +
+        lsSQL = "SELECT " +
+                    " a.sListngID " +
+                    ", a.nEntryNox " +
+                    ", a.sQuestion " +
+                    ",IFNULL(a.sReplyxxx, '') sReplyxxx "+
+                    ", IFNULL(a.nPriority, 0) nPriority " +
+                    ", IFNULL(a.sCreatedx, '') sCreatedx " +
+                    ", IFNULL(a.dCreatedx, '') dCreatedx " +
+                    ", IFNULL(a.sRepliedx, '') sRepliedx " +
+                    ", IFNULL(a.dRepliedx, '') dRepliedx " +
+                    ", IFNULL(a.cReadxxxx, '') cReadxxxx " +
+                    ", IFNULL(a.dReadxxxx, '') dReadxxxx" +
+                    ", IFNULL(a.sReadxxxx, '') sReadxxxx " +
+                    ", a.cRecdStat " +
+                    ", a.dTimeStmp " +
+                    ", '' xBarCodex " +
+                    ", '' xDescript " +
+                    ", '' xBrandNme " +
+                    ", IFNULL(e.sModelNme, '') xModelNme " +
+                    ", '' xColorNme " +
+                    ", '' xCategrNm " +
+                    ", '' sImagesxx " +
+                    ", IFNULL(CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName), '') AS sCompnyNm " +
                 "FROM mp_questions a " +
+                    "  LEFT JOIN app_user_master f " +
+                    "    ON a.sCreatedx = f.sUserIDxx " +
                     "  LEFT JOIN Client_Master b " +
-                    "	ON a.sCreatedx = b.sClientID " +
+                    "    ON f.sEmployNo = b.sClientID " +
                     "  LEFT JOIN mp_inv_master c " +
                     "	ON a.sListngID = c.sListngID " +
                     "  LEFT JOIN cp_inventory d  " +
@@ -366,6 +368,63 @@ public class FAQuestions {
                 "WHERE " + lsCondition; 
         return lsSQL;
     }
+//    public String getSQ_Detail(){
+//        String lsSQL = "";
+//        String lsCondition = "";
+//        String lsStat = String.valueOf(p_nTranStat);
+//        
+//        if (lsStat.length() > 1){
+//            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+//                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+//            }
+//            
+//            lsCondition = "a.cRecdStat IN (" + lsSQL.substring(2) + ")";
+//        } else 
+//            lsCondition = "a.cRecdStat = " + SQLUtil.toSQL(lsStat);
+//        
+//        lsSQL = "SELECT " +
+//                    " a.sListngID " +
+//                    ", a.nEntryNox " +
+//                    ",  a.sQuestion " +
+//                    ",  a.sReplyxxx "+
+//                    ",  IFNULL(a.nPriority, 0) nPriority " +
+//                    ",  IFNULL(a.sCreatedx, '') sCreatedx " +
+//                    ",  IFNULL(a.dCreatedx, '') dCreatedx " +
+//                    ",  IFNULL(a.sRepliedx, '') sRepliedx " +
+//                    ",  IFNULL(a.dRepliedx, '') dRepliedx " +
+//                    ",  IFNULL(a.cReadxxxx, '') cReadxxxx " +
+//                    ",  IFNULL(a.dReadxxxx, '') dReadxxxx" +
+//                    ",  IFNULL(a.sReadxxxx, '') sReadxxxx " +
+//                    ",  a.cRecdStat " +
+//                    ",  a.dTimeStmp " +
+//                    ",  d.sBarrcode xBarCodex " +
+//                    ",  d.sDescript xDescript " +
+//                    ",  IFNULL(e.sBrandNme, '') xBrandNme " +
+//                    ",  IFNULL(f.sModelNme, '') xModelNme " +
+//                    ",  IFNULL(g.sColorNme, '') xColorNme " +
+//                    ",  c.sDescript xCategrNm " +
+//                    ",  b.sImagesxx " +
+//                    ",  IFNULL(CONCAT(h.sFrstName, ' ', h.sMiddName,' ', h.sLastName), '') AS sCompnyNm " +
+//                " FROM " + MASTER_TABLE + " a " +
+//                    "  LEFT JOIN Client_Master h " +
+//                    "    ON a.sCreatedx = h.sClientID " +
+//                    "  LEFT JOIN MP_Inv_Master b " +
+//                    "    ON a.sListngID = b.sListngID " +
+//                    "  LEFT JOIN Inv_Category c " +
+//                    "    ON b.sCategrID = c.sCategrID " +
+//                    ",  CP_Inventory d " +
+//                    "  LEFT JOIN CP_Brand e " +
+//                    "    ON d.sBrandIDx = e.sBrandIDx " +
+//                    "  LEFT JOIN CP_Model f " +
+//                    "    ON d.sModelIDx = f.sModelIDx " +
+//                    "  LEFT JOIN Color g " +
+//                    "    ON d.sColorIDx = g.sColorIDx " +
+//                " WHERE b.sStockIDx = d.sStockIDx " +
+//                    " AND b.sCategrID IN('0002', '0004') " +
+//                    " AND " + lsCondition;
+//        return lsSQL;
+//    }
+//    
     public String getSQ_Detail(){
         String lsSQL = "";
         String lsCondition = "";
@@ -384,8 +443,8 @@ public class FAQuestions {
                     " a.sListngID " +
                     ", a.nEntryNox " +
                     ",  a.sQuestion " +
-                    ",  a.sReplyxxx " +
-                    ",  a.nPriority " +
+                    ",  IFNULL(a.sReplyxxx, '') sReplyxxx "+
+                    ",  IFNULL(a.nPriority, '') nPriority " +
                     ",  a.sCreatedx " +
                     ",  a.dCreatedx " +
                     ",  a.sRepliedx " +
@@ -402,10 +461,12 @@ public class FAQuestions {
                     ",  IFNULL(g.sColorNme, '') xColorNme " +
                     ",  c.sDescript xCategrNm " +
                     ",  b.sImagesxx " +
-                    ",  CONCAT(h.sFrstName, ' ', h.sMiddName,' ', h.sLastName) AS sCompnyNm " +
+                    ",  IFNULL(CONCAT(h.sFrstName, ' ', h.sMiddName,' ', h.sLastName), '') AS sCompnyNm " +
                 " FROM " + MASTER_TABLE + " a " +
+                    "  LEFT JOIN app_user_master i " +
+                    "    ON a.sCreatedx = i.sUserIDxx " +
                     "  LEFT JOIN Client_Master h " +
-                    "    ON a.sCreatedx = h.sClientID " +
+                    "    ON i.sEmployNo = h.sClientID " +
                     "  LEFT JOIN MP_Inv_Master b " +
                     "    ON a.sListngID = b.sListngID " +
                     "  LEFT JOIN Inv_Category c " +
@@ -420,6 +481,7 @@ public class FAQuestions {
                 " WHERE b.sStockIDx = d.sStockIDx " +
                     " AND b.sCategrID IN('0002', '0004') " +
                     " AND " + lsCondition;
+        System.out.println(lsSQL);
         return lsSQL;
     }
     

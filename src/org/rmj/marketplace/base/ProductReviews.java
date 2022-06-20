@@ -344,15 +344,15 @@ public class ProductReviews {
                     ", a.nEntryNox " +
                     ",  a.nRatingxx " +
                     ",  a.sRemarksx " +
-                    ",  a.sReplyxxx " +
-                    ",  a.nPriority " +
-                    ",  a.sCreatedx " +
-                    ",  a.dCreatedx " +
-                    ",  a.sRepliedx " +
-                    ",  a.dRepliedx " +
-                    ",  a.cReadxxxx " +
-                    ",  IFNULL(a.dReadxxxx, '') dReadxxxx" +
-                    ",  a.sReadxxxx " +
+                    ",IFNULL(a.sReplyxxx, '') sReplyxxx "+
+                    ", IFNULL(a.nPriority, 0) nPriority " +
+                    ", IFNULL(a.sCreatedx, '') sCreatedx " +
+                    ", IFNULL(a.dCreatedx, '') dCreatedx " +
+                    ", IFNULL(a.sRepliedx, '') sRepliedx " +
+                    ", IFNULL(a.dRepliedx, '') dRepliedx " +
+                    ", IFNULL(a.cReadxxxx, '') cReadxxxx " +
+                    ", IFNULL(a.dReadxxxx, '') dReadxxxx" +
+                    ", IFNULL(a.sReadxxxx, '') sReadxxxx " +
                     ",  a.cRecdStat " +
                     ",  a.dTimeStmp " +
                     ",  '' xBarCodex " +
@@ -362,10 +362,12 @@ public class ProductReviews {
                     ",  '' xColorNme " +
                     ",  '' xCategrNm " +
                     ",  '' sImagesxx " +
-                    ",  CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sCompnyNm " +
+                    ",  IFNULL(CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName), '') AS sCompnyNm " +
                 " FROM " + MASTER_TABLE + " a " +
+                    "  LEFT JOIN app_user_master c " +
+                    "    ON a.sCreatedx = c.sUserIDxx " +
                     "  LEFT JOIN Client_Master b " +
-                    "    ON a.sCreatedx = b.sClientID " +
+                    "    ON c.sEmployNo = b.sClientID " +
                 " WHERE " + lsCondition;
         System.out.println(lsSQL);
         return lsSQL;
@@ -389,15 +391,15 @@ public class ProductReviews {
                     ", a.nEntryNox " +
                     ",  a.nRatingxx " +
                     ",  a.sRemarksx " +
-                    ",  a.sReplyxxx " +
-                    ",  a.nPriority " +
-                    ",  a.sCreatedx " +
-                    ",  a.dCreatedx " +
-                    ",  a.sRepliedx " +
-                    ",  a.dRepliedx " +
-                    ",  a.cReadxxxx " +
-                    ",  IFNULL(a.dReadxxxx, '') dReadxxxx" +
-                    ",  a.sReadxxxx " +
+                    ",IFNULL(a.sReplyxxx, '') sReplyxxx "+
+                    ", IFNULL(a.nPriority, 0) nPriority " +
+                    ", IFNULL(a.sCreatedx, '') sCreatedx " +
+                    ", IFNULL(a.dCreatedx, '') dCreatedx " +
+                    ", IFNULL(a.sRepliedx, '') sRepliedx " +
+                    ", IFNULL(a.dRepliedx, '') dRepliedx " +
+                    ", IFNULL(a.cReadxxxx, '') cReadxxxx " +
+                    ", IFNULL(a.dReadxxxx, '') dReadxxxx" +
+                    ", IFNULL(a.sReadxxxx, '') sReadxxxx " +
                     ",  a.cRecdStat " +
                     ",  a.dTimeStmp " +
                     ",  d.sBarrcode xBarCodex " +
@@ -407,10 +409,12 @@ public class ProductReviews {
                     ",  IFNULL(g.sColorNme, '') xColorNme " +
                     ",  c.sDescript xCategrNm " +
                     ",  b.sImagesxx " +
-                    ",  CONCAT(h.sFrstName, ' ', h.sMiddName,' ', h.sLastName) AS sCompnyNm " +
+                    ",  IFNULL(CONCAT(h.sFrstName, ' ', h.sMiddName,' ', h.sLastName), '') AS sCompnyNm " +
                 " FROM " + MASTER_TABLE + " a " +
+                    "  LEFT JOIN app_user_master i " +
+                    "    ON a.sCreatedx = i.sUserIDxx " +
                     "  LEFT JOIN Client_Master h " +
-                    "    ON a.sCreatedx = h.sClientID " +
+                    "    ON i.sEmployNo = h.sClientID " +
                     "  LEFT JOIN MP_Inv_Master b " +
                     "    ON a.sListngID = b.sListngID " +
                     "  LEFT JOIN Inv_Category c " +
