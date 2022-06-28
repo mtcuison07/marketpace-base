@@ -687,7 +687,7 @@ public class ProductListing {
         meta.setColumnName(27, "sImagesxx");
         meta.setColumnLabel(27, "sImagesxx");
         meta.setColumnType(27, Types.VARCHAR);
-         meta.setColumnDisplaySize(27, 2048);  
+        meta.setColumnDisplaySize(27, 2048);  
         
         p_oMaster = new CachedRowSetImpl();
         p_oMaster.setMetaData(meta);
