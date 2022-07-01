@@ -64,7 +64,7 @@ public class WayBill {
     public void setTranStat(int fnValue){
         p_nTranStat = fnValue;
     }
-   
+    
     public void setListener(LTransaction foValue){
         p_oListener = foValue;
     }
@@ -192,6 +192,7 @@ public class WayBill {
         p_oMaster.insertRow();
         p_oMaster.moveToCurrentRow();
     }
+    
     public boolean LoadOrder(String fsTransNox) throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -367,7 +368,7 @@ public class WayBill {
                 break;
         }
     }
-     public void setOrder(String fsIndex, Object foValue) throws SQLException{
+    public void setOrder(String fsIndex, Object foValue) throws SQLException{
         setOrder(getColumnIndex(p_oOrder, fsIndex), foValue);
     }
     public String getMessage(){
@@ -482,7 +483,8 @@ public class WayBill {
                 "	ON a.sClientID = b.sClientID " +
                 "LEFT JOIN TownCity c " + 
                 "ON b.sTownIDxx = c.sTownIDxx " + 
-                " WHERE " + lsCondition ;
+//                " WHERE sWaybilNo = NULL " +
+                " WHERE " +lsCondition ;
         return lsSQL;
     }
     public String getSQ_Master(){

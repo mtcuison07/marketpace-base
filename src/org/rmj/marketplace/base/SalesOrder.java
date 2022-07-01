@@ -35,12 +35,14 @@ public class SalesOrder {
     
     private int p_nEditMode;
     private int p_nTranStat;
+    private boolean pbIsGAway = false;
 
     private String p_sMessage;
     private boolean p_bWithUI = true;
 
     private CachedRowSet p_oMaster;
     private CachedRowSet p_oDetail;
+    private CachedRowSet p_oIssuance;
     private CachedRowSet p_oPayment;
     private LTransaction p_oListener;
     private LResult p_oResult;
@@ -56,6 +58,10 @@ public class SalesOrder {
         p_nEditMode = EditMode.UNKNOWN;
     }
     
+    public void setGiveaways(boolean fnValue){
+        pbIsGAway = fnValue;
+    }
+   
     public void setTranStat(int fnValue){
         p_nTranStat = fnValue;
     }
@@ -302,6 +308,7 @@ public class SalesOrder {
                 break;
         }
     }
+    
     private boolean loadPayment(String fsTransNox) throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -309,7 +316,6 @@ public class SalesOrder {
         }
         
         p_sMessage = "";    
-        System.out.println();
         String lsSQL = getSQ_Payment()+ " AND sSourceNo = " + SQLUtil.toSQL(fsTransNox);
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
         
@@ -425,6 +431,68 @@ public class SalesOrder {
                     "	ON d.sColorIDx = g.sColorIDx";
         return lsSQL;
     }
+    public String getItem(){
+        String lsSQL = "";
+        lsSQL = "SELECT " +
+            "  h.sSerialNo, " +
+            "  d.sBarrcode xBarCodex, " +
+            "  d.sDescript xDescript, " +
+            "  IFNULL(b.nQtyOnHnd,0) nQtyOnHnd, " +
+            "  IFNULL(a.nQuantity,1) nQuantity, " +
+            "  IFNULL(b.nUnitPrce,0) nUnitPrce, " +
+            "  h.sSerialID,  e.sBrandNme, " +
+            "  f.sModelNme, " +
+            "  g.sColorNme  " +
+            " FROM mp_inv_master b " +
+            " LEFT JOIN sales_order_detail a " +
+            "    ON b.sStockIDx = a.sStockIDx " +
+            "  LEFT JOIN inv_category c " +
+            "    ON b.sCategrID = c.sCategrID " +   
+            "  LEFT JOIN CP_Inventory d " +
+            "    ON d.sStockIDx = b.sStockIDx " +
+            "  LEFT JOIN CP_Brand e " +
+            "    ON d.sBrandIDx = e.sBrandIDx " +
+            "  LEFT JOIN CP_Model f " +
+            "    ON d.sModelIDx = f.sModelIDx " +
+            "  LEFT JOIN color g " +
+            "    ON d.sColorIDx = g.sColorIDx, " +
+            "  CP_Inventory_Serial h " +
+            " WHERE d.sStockIDx = h.sStockIDx " +
+            "    AND d.sModelIDx = f.sModelIDx " +
+            "    AND d.sBrandIDx = e.sBrandIDx ";
+        return lsSQL;
+    }
+    public String getGiveaways(){
+        String lsSQL = "";
+        lsSQL = "SELECT " +
+            "  h.sSerialNo, " +
+            "  d.sBarrcode xBarCodex, " +
+            "  d.sDescript xDescript, " +
+            "  IFNULL(b.nQtyOnHnd,0) nQtyOnHnd, " +
+            "  IFNULL(a.nQuantity,1) nQuantity, " +
+            "  IFNULL(b.nUnitPrce,0) nUnitPrce, " +
+            "  h.sSerialID,  e.sBrandNme, " +
+            "  f.sModelNme, " +
+            "  g.sColorNme  " +
+            " FROM mp_inv_master b " +
+            " LEFT JOIN sales_order_detail a " +
+            "    ON b.sStockIDx = a.sStockIDx " +
+            "  LEFT JOIN inv_category c " +
+            "    ON b.sCategrID = c.sCategrID " +
+            "  LEFT JOIN CP_Inventory d " +
+            "    ON d.sStockIDx = b.sStockIDx " +
+            "  LEFT JOIN CP_Brand e " +
+            "    ON d.sBrandIDx = e.sBrandIDx " +
+            "  LEFT JOIN CP_Model f " +
+            "    ON d.sModelIDx = f.sModelIDx " +
+            "  LEFT JOIN color g " +
+            "    ON d.sColorIDx = g.sColorIDx, " +
+            "  CP_Inventory_Serial h " +
+            " WHERE d.sStockIDx = h.sStockIDx " +
+            "    AND d.sModelIDx = f.sModelIDx " +
+            "    AND d.sBrandIDx = e.sBrandIDx ";
+        return lsSQL;
+    }
     
     private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
         int lnIndex = 0;
@@ -460,15 +528,11 @@ public class SalesOrder {
         String lsSQL;
         
         lnRow = getPaymentItemCount();
-        System.out.println("payment count = " +getPaymentItemCount());
         while(lnCtr <= lnRow ){
-            System.out.println("payment counter = " +lnCtr);
             setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
             String transNox = (String)getPayment(lnCtr, "sTransNox");
             
             if (!isEntryOK(lnCtr)) return false;
-//            p_oPayment.updateObject("dModified", p_oApp.getServerDate().toString());
-//            p_oPayment.updateRow();
             lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
                                         PAYMENT_TABLE, 
                                         "",
@@ -494,38 +558,7 @@ public class SalesOrder {
             }
             lnCtr++;
         }
-//        for (lnCtr = 1; lnCtr <= lnRow; lnRow++){
-//            System.out.println("payment counter = " +lnCtr);
-//            setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
-//            String transNox = (String)getPayment(lnCtr, "sTransNox");
-//            
-//            if (!isEntryOK(lnCtr)) return false;
-////            p_oPayment.updateObject("dModified", p_oApp.getServerDate().toString());
-////            p_oPayment.updateRow();
-//            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
-//                                        PAYMENT_TABLE, 
-//                                        "",
-//                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
-//                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
-//            
-//            if (!lsSQL.isEmpty()){
-//                if (!lsSQL.isEmpty()){
-//                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
-//                        if (!p_bWithParent) p_oApp.rollbackTrans();
-//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-//                        return false;
-//                    }
-//                }
-//                
-//                p_nEditMode = EditMode.UNKNOWN;
-//                
-//                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
-//                return true;
-//            }
-//        }
-        
             
-        //set transaction number on records
         
         return true;
     }
@@ -538,34 +571,34 @@ public class SalesOrder {
         
         p_sMessage = "";    
         
-        String lsSQL = MiscUtil.addCondition(getSQ_Master(), "sBranchCd = " + SQLUtil.toSQL(p_sBranchCd));
-        
+        String lsSQL = "";
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(getItem(), " d.sBarrcode = " + SQLUtil.toSQL(fsValue));   
+        else {
+            if (!fsValue.isEmpty()) {
+                lsSQL = MiscUtil.addCondition(getItem(), " d.sBarrcode LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+                
+            }
+        }
         if (p_bWithUI){
             JSONObject loJSON = showFXDialog.jsonSearch(
                                 p_oApp, 
-                                getSQ_Master(), 
-                                fsValue, 
-                                "Order No.»Customer Name", 
-                                "sTransNox»sCompnyNm", 
-                                "sTransNox»sCompnyNm", 
+                                getItem(), 
+                                fsValue,
+                                "Serial No.»Barrcode»Description»Qty on Hand", 
+                                "h.sSerialNo»xBarCodex»xDescript»nQtyOnHnd", 
+                                "h.sSerialNo»d.sBarrcode»d.sDescript»b.nQtyOnHnd", 
                                 fbByCode ? 0 : 1);
             
             if (loJSON != null) 
-                return OpenTransaction((String) loJSON.get("sTransNox"));
+                return OpenItem((String) loJSON.get("sSerialNo"));
             else {
                 p_sMessage = "No record selected.";
                 return false;
             }
         }
         
-        if (fbByCode)
-            lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox = " + SQLUtil.toSQL(fsValue));   
-        else {
-            if (!fsValue.isEmpty()) {
-                lsSQL = MiscUtil.addCondition(lsSQL, "sBriefDsc LIKE " + SQLUtil.toSQL(fsValue + "%")); 
-                lsSQL += " LIMIT 1";
-            }
-        }
+       
         
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
         
@@ -575,11 +608,116 @@ public class SalesOrder {
             return false;
         }
         
-        lsSQL = loRS.getString("sTransNox");
+        lsSQL = loRS.getString("sSerialNo");
         MiscUtil.close(loRS);
         
-        return OpenTransaction(lsSQL);
+        return OpenItem(lsSQL);
     }
+    
+    
+    public boolean SearchItem(String fsValue, boolean fbByCode) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";    
+        
+        String lsSQL = "";
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(getItem(), " d.sBarrcode = " + SQLUtil.toSQL(fsValue));   
+        else {
+            if (!fsValue.isEmpty()) {
+                lsSQL = MiscUtil.addCondition(getItem(), " d.sBarrcode LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+                
+            }
+        }
+        if (p_bWithUI){
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                p_oApp, 
+                                getItem(), 
+                                fsValue,
+                                "Serial No.»Barrcode»Description»Qty on Hand", 
+                                "h.sSerialNo»xBarCodex»xDescript»nQtyOnHnd", 
+                                "h.sSerialNo»d.sBarrcode»d.sDescript»b.nQtyOnHnd", 
+                                fbByCode ? 0 : 1);
+            
+            if (loJSON != null) 
+                return OpenItem((String) loJSON.get("sSerialNo"));
+            else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+        
+       
+        
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        if (!loRS.next()){
+            MiscUtil.close(loRS);
+            p_sMessage = "No transaction found for the givern criteria.";
+            return false;
+        }
+        
+        lsSQL = loRS.getString("sSerialNo");
+        MiscUtil.close(loRS);
+        
+        return OpenItem(lsSQL);
+    }
+    
+    public boolean SearchGiveaways(String fsValue, boolean fbByCode) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";    
+        
+        String lsSQL = "";
+        if (fbByCode)
+            lsSQL = MiscUtil.addCondition(getGiveaways(), " d.sBarrcode = " + SQLUtil.toSQL(fsValue));   
+        else {
+            if (!fsValue.isEmpty()) {
+                lsSQL = MiscUtil.addCondition(getGiveaways(), " d.sBarrcode LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+                
+            }
+        }
+        if (p_bWithUI){
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                p_oApp, 
+                                getGiveaways(), 
+                                fsValue,
+                                "Serial No.»Barrcode»Description»Qty on Hand", 
+                                "h.sSerialNo»xBarCodex»xDescript»nQtyOnHnd", 
+                                "h.sSerialNo»d.sBarrcode»d.sDescript»b.nQtyOnHnd", 
+                                fbByCode ? 0 : 1);
+            
+            if (loJSON != null) 
+                return OpenItem((String) loJSON.get("sSerialNo"));
+            else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+        
+       
+        
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        if (!loRS.next()){
+            MiscUtil.close(loRS);
+            p_sMessage = "No transaction found for the givern criteria.";
+            return false;
+        }
+        
+        lsSQL = loRS.getString("sSerialNo");
+        MiscUtil.close(loRS);
+        
+        return OpenItem(lsSQL);
+    }
+    
+    
     
     public boolean OpenTransaction(String fsTransNox) throws SQLException{
         p_nEditMode = EditMode.UNKNOWN;
@@ -616,6 +754,40 @@ public class SalesOrder {
         return true;
     }
     
+    public boolean OpenItem(String fsTransNox) throws SQLException{
+        p_nEditMode = EditMode.UNKNOWN;
+        
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        
+        p_sMessage = "";
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+        
+        lsSQL = getItem()+ " AND h.sSerialNo LIKE " + SQLUtil.toSQL(fsTransNox + "%");
+        
+        //open master
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oIssuance = factory.createCachedRowSet();
+        p_oIssuance.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        p_oIssuance.last();
+        if (p_oIssuance.getRow() <= 0) {
+            p_sMessage = "No transaction was loaded.";
+            return false;
+        }
+        
+        p_nEditMode = EditMode.READY;
+        
+        return true;
+    }
+    
+    
     public boolean UpdateTransaction() throws SQLException{
         if (p_nEditMode != EditMode.READY){
             p_sMessage = "Invalid edit mode.";
@@ -630,5 +802,76 @@ public class SalesOrder {
         p_nEditMode = EditMode.UPDATE;
         return true;
     }
+    public int getIssuanceItemCount() throws SQLException{
+        if (p_oIssuance == null) return 0;
+        
+        p_oIssuance.last();
+        return p_oIssuance.getRow();
+    }
+    
+    public Object getIssuance(int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oIssuance.first();
+        return p_oIssuance.getObject(fnIndex);
+    }
+    
+    public Object getIssuance(String fsIndex) throws SQLException{
+        return getIssuance(getColumnIndex(p_oIssuance, fsIndex));
+    }
+    public Object getIssuance(int fnRow, String fsIndex) throws SQLException{
+        return getIssuance(getColumnIndex(p_oIssuance, fsIndex));
+    }
+    
+    public void setIssuance(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setPayment(fnRow, getColumnIndex(p_oIssuance, fsIndex), foValue);
+    }
+    
+    public void setIssuance(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
+            System.out.println("Invalid Edit Mode Detected.");
+            return;
+        }
+        //p_oPayment.first();
+        p_oIssuance.absolute(fnRow);
+        
+        switch (fnIndex){
+            case 4: //nQtyOnHnd
+            case 5: //nQuantity
+                if (foValue instanceof Integer){
+                    p_oIssuance.updateInt(fnIndex, (int) foValue);
+                }else 
+                    p_oMaster.updateDouble(fnIndex, 0);       
+                
+                 p_oIssuance.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oIssuance.getString(fnIndex));
+                break;
+                
+            case 6: //nUnitPrce
+                if (foValue instanceof Double)
+                    p_oMaster.updateDouble(fnIndex, (double) foValue);
+                else 
+                    p_oMaster.updateDouble(fnIndex, 0.000);
+                
+                p_oIssuance.updateRow();
+                
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oIssuance.getString(fnIndex));
+                break;
+                
+            case 1:
+            case 2:
+            case 3:
+            case 7:
+            case 8:
+            case 9:
+            case 10:
+                p_oIssuance.updateString(fnIndex, (String) foValue);
+                p_oIssuance.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oIssuance.getString(fnIndex));
+                break;
+            
+        }
+    }
     
 }
+      

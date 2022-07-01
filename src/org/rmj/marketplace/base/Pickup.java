@@ -152,6 +152,9 @@ public class Pickup {
         
         p_oMaster.updateObject("sBatchNox", MiscUtil.getNextCode(MASTER_TABLE, "sBatchNox", true, p_oApp.getConnection(), p_sBranchCd));
         p_oMaster.updateObject("dPickedUp", p_oApp.getServerDate());
+        p_oMaster.updateObject("sRemarksx", "");
+        p_oMaster.updateObject("dTransact", p_oApp.getServerDate());
+        p_oMaster.updateObject("cTranStat", "2");
         
         p_oMaster.insertRow();
         p_oMaster.moveToCurrentRow();
@@ -226,33 +229,16 @@ public class Pickup {
         
         switch (fnIndex){
            
-            case 1: 
-            case 3: 
-            case 2:
-            case 4:
-            case 11:
-            case 13:
+            case 1: //sBatchNox
+            case 3: //sRemarksx
+            case 5: //sEntryByx
+            case 8: //sPickedBy
                 p_oMaster.updateString(fnIndex, (String) foValue);
                 p_oMaster.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
                 break;
-            case 5:
-            case 6: 
-            case 7:
-            case 8:
+            case 4:
             case 9:
-                if (foValue instanceof Double)
-                    p_oMaster.updateDouble(fnIndex, (double) foValue);
-                else 
-                    p_oMaster.updateDouble(fnIndex, 0.000);
-                
-                
-                p_oMaster.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
-                break;
-            case 10:
-            case 12:
-            case 14:
                 if (foValue instanceof Integer)
                     p_oMaster.updateInt(fnIndex, (int) foValue);
                 else 
@@ -261,7 +247,10 @@ public class Pickup {
                 p_oMaster.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
                 break;
-             case 15: //dModified
+             case 2: //dTransact
+             case 6: //dEntryDte
+             case 7: //dPickedUp
+             case 10: //dModified
                 if (foValue instanceof Date){
                     p_oMaster.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
                 } else
@@ -384,6 +373,124 @@ public class Pickup {
         return p_oOrder.getRow();
     }
     
+    
+    public Object getWaybill(int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oWaybill.first();
+        return p_oWaybill.getObject(fnIndex);
+    }
+    
+    public Object getWaybill(String fsIndex) throws SQLException{
+        return getWaybill(getColumnIndex(p_oWaybill, fsIndex));
+    }
+    
+    public void setWaybill(int fnIndex, Object foValue) throws SQLException{
+        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
+            System.out.println("Invalid Edit Mode Detected.");
+            return;
+        }
+        
+        p_oWaybill.first();
+        
+        switch (fnIndex){
+           
+            case 1: //sBatchNox
+            case 3: //sRemarksx
+            case 5: //sEntryByx
+            case 8: //sPickedBy
+                p_oWaybill.updateString(fnIndex, (String) foValue);
+                p_oWaybill.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
+                break;
+            case 4:
+            case 9:
+                if (foValue instanceof Integer)
+                    p_oWaybill.updateInt(fnIndex, (int) foValue);
+                else 
+                    p_oWaybill.updateInt(fnIndex, 0);
+                
+                p_oWaybill.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
+                break;
+             case 2: //dTransact
+             case 6: //dEntryDte
+             case 7: //dPickedUp
+             case 10: //dModified
+                if (foValue instanceof Date){
+                    p_oWaybill.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
+                } else
+                    p_oWaybill.updateDate(fnIndex, SQLUtil.toDate(p_oApp.getServerDate()));
+                
+                p_oWaybill.updateRow();
+                
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
+                break;
+        }
+    }
+     public void setWaybill(String fsIndex, Object foValue) throws SQLException{
+        setWaybill(getColumnIndex(p_oWaybill, fsIndex), foValue);
+    }
+    
+    public int getWaybillItemCount() throws SQLException{
+        if (p_oWaybill == null) return 0;
+        
+        p_oWaybill.last();
+        return p_oWaybill.getRow();
+    }
+    
+    public Object getWaybill(int fnRow, int fnIndex) throws SQLException{
+        if (getWaybillItemCount()  == 0) return null;
+        
+        if (getWaybillItemCount() == 0 || fnRow > getWaybillItemCount()) return null;   
+       
+        p_oWaybill.absolute(fnRow);
+        return p_oWaybill.getObject(fnIndex);
+        
+    }
+    
+    public Object getWaybill(int fnRow, String fsIndex) throws SQLException{
+        return getWaybill(fnRow, getColumnIndex(p_oWaybill, fsIndex));
+    }
+    
+    public void setWaybill(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setWaybill(fnRow, getColumnIndex(p_oWaybill, fsIndex), foValue);
+    }
+    
+    public void setWaybill(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
+            System.out.println("Invalid Edit Mode Detected.");
+            return;
+        }
+        //p_oWaybill.first();
+        p_oWaybill.absolute(fnRow);
+        
+        switch (fnIndex){
+            case 6: //sRemarksx
+                p_oWaybill.updateString(fnIndex, (String) foValue);
+                p_oWaybill.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
+                break;
+            case 9:
+                if (foValue instanceof Integer){
+                    p_oWaybill.updateInt(fnIndex, (int) foValue);
+                    p_oWaybill.updateRow();
+                }                
+                
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
+                break;
+            case 10:
+                if (foValue instanceof Date){
+                    p_oWaybill.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
+                } else
+                    p_oWaybill.updateDate(fnIndex, SQLUtil.toDate(p_oApp.getServerDate()));
+                
+                p_oWaybill.updateRow();
+                
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
+                break;
+        }
+    }
     public void displayMasFields() throws SQLException{
         if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) return;
         
@@ -410,32 +517,30 @@ public class Pickup {
         System.out.println("----------------------------------------");
     } 
     
-//    
-//    private boolean loadPayment(String fsTransNox) throws SQLException{
-//        if (p_oApp == null){
-//            p_sMessage = "Application driver is not set.";
-//            return false;
-//        }
-//        
-//        p_sMessage = "";    
-//        System.out.println();
-//        String lsSQL = getSQ_Payment()+ " AND sSourceNo = " + SQLUtil.toSQL(fsTransNox);
-//        ResultSet loRS = p_oApp.executeQuery(lsSQL);
-//        
-//        RowSetFactory factory = RowSetProvider.newFactory();
-//        p_oPayment = factory.createCachedRowSet();
-//        
-//        if (MiscUtil.RecordCount(loRS) == 0){
-//            MiscUtil.close(loRS);
-//            p_sMessage = "No record found for the given criteria.";
-//            return false;
-//        }
-//        
-//        p_oPayment.populate(loRS);
-//        MiscUtil.close(loRS);
-//        return true;
-//    }
-    
+    private boolean loadWaybill(String fsValue) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";    
+        System.out.println();
+        String lsSQL = getSQ_Detail() + " AND b.sTransNox = " + SQLUtil.toSQL(fsValue);
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        RowSetFactory factory = RowSetProvider.newFactory();
+        p_oWaybill = factory.createCachedRowSet();
+        
+        if (MiscUtil.RecordCount(loRS) == 0){
+            MiscUtil.close(loRS);
+            p_sMessage = "No record found for the given criteria.";
+            return false;
+        }
+        
+        p_oWaybill.populate(loRS);
+        MiscUtil.close(loRS);
+        return true;
+    }
     public String getSQ_OrderMaster(){
         String lsSQL = "";
         
@@ -479,22 +584,13 @@ public class Pickup {
         String lsSQL = "";
           
         lsSQL = "SELECT" +
-                  "  a.sTransNox" +
-                  ", a.sBatchNox" +
-                  ", a.sTrackrNo" +
-                  ", b.sPackngDs" +
-                  ", a.nTotlWght" +
-                  ", a.nTotlPckg" +
-                  ", a.nDimnsnLx" +
-                  ", a.nDimnsnWx" +
-                  ", a.nDimnsnHx" +
-                  ", a.cCommClss" +
-                  ", a.sClientRf" +
-                  ", a.cShipAcpt" +
-                  ", a.sAir21Str" +
-                  ", a.cPaymentx" +
-                  ", a.sPackngCD" +
-               " FROM ECommerce_Order_Waybill a" +
+                  " sBatchNox" +
+                  ", dTransact" +
+                  ", sRemarksx" +
+                  ", dPickedUp" +
+                  ", sPickedBy" +
+                  ", cTranStat" +
+               " FROM ECommerce_Pickup_Master a" +
                   " LEFT JOIN Ecommerce_Packaging b" +
                      " ON a.sPackngCD = b.sPackngCD ";
                
@@ -505,24 +601,19 @@ public class Pickup {
         String lsSQL = "";
         
         lsSQL = "SELECT" +
-                  "  a.sTransNox" +
-                  ", a.sBatchNox" +
-                  ", a.sTrackrNo" +
-                  ", b.sPackngDs" +
-                  ", a.nTotlWght" +
-                  ", a.nTotlPckg" +
-                  ", a.nDimnsnLx" +
-                  ", a.nDimnsnWx" +
-                  ", a.nDimnsnHx" +
-                  ", a.cCommClss" +
-                  ", a.sClientRf" +
-                  ", a.cShipAcpt" +
-                  ", a.sAir21Str" +
-                  ", a.cPaymentx" +
-                  ", a.sPackngCD" +
-               " FROM ECommerce_Order_Waybill a" +
-                  " LEFT JOIN Ecommerce_Packaging b" +
-                     " ON a.sPackngCD = b.sPackngCD ";
+               "  a.sTransNox" +
+               ",  CONCAT(c.sFrstName, ' ', c.sMiddName,' ', c.sLastName) AS sCompnyNm" +
+               ", d.sPackngDs" +
+               ", b.dTransact" +
+               ", b.sTransNox xReferNox" +
+            " FROM ECommerce_Order_Waybill a" +
+               ", sales_order_master b" +
+               ", Client_Master c" +
+               ", ECommerce_Packaging d" +
+            " WHERE a.sTransNox = b.sTransNox" +
+               " AND b.sClientID = c.sClientID" +
+               " AND a.sPackngCD = d.sPackngCD" +
+               " AND b.cTranStat = '3'";
                
         return lsSQL;
     }
@@ -650,7 +741,7 @@ public class Pickup {
             return false;
         }
         
-        
+        loadWaybill(fsTransNox);
         p_nEditMode = EditMode.READY;
         
         return true;

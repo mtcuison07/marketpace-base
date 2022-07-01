@@ -35,6 +35,7 @@ public class CPEcommerce {
     
     private int p_nEditMode;
     private int p_nTranStat;
+    private boolean pbIsGAway = false;
 
     private String p_sMessage;
     private boolean p_bWithUI = true;
@@ -57,6 +58,10 @@ public class CPEcommerce {
         p_nEditMode = EditMode.UNKNOWN;
     }
     
+    public void setGiveaways(boolean fnValue){
+        pbIsGAway = fnValue;
+    }
+   
     public void setTranStat(int fnValue){
         p_nTranStat = fnValue;
     }
@@ -442,7 +447,7 @@ public class CPEcommerce {
             " LEFT JOIN sales_order_detail a " +
             "    ON b.sStockIDx = a.sStockIDx " +
             "  LEFT JOIN inv_category c " +
-            "    ON b.sCategrID = c.sCategrID " +
+            "    ON b.sCategrID = c.sCategrID " +   
             "  LEFT JOIN CP_Inventory d " +
             "    ON d.sStockIDx = b.sStockIDx " +
             "  LEFT JOIN CP_Brand e " +
@@ -803,6 +808,7 @@ public class CPEcommerce {
         p_oIssuance.last();
         return p_oIssuance.getRow();
     }
+    
     public Object getIssuance(int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
