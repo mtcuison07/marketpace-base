@@ -41,6 +41,7 @@ public class WayBill {
     private int p_nEditMode;
     private int p_nTranStat;
 
+    private boolean pbRecExist;
     private String p_sMessage;
     private boolean p_bWithUI = true;
 
@@ -484,7 +485,7 @@ public class WayBill {
                 "LEFT JOIN TownCity c " + 
                 "ON b.sTownIDxx = c.sTownIDxx " + 
 //                " WHERE sWaybilNo = NULL " +
-                " WHERE " +lsCondition ;
+                " WHERE sWaybilNo = NULL AND " +lsCondition;
         return lsSQL;
     }
     public String getSQ_Master(){
@@ -519,15 +520,15 @@ public class WayBill {
         String lsStat = String.valueOf(p_nTranStat);
         
         if (lbSearch){
-            lsCondition = " sPackngDs LIKE  "+ SQLUtil.toSQL(fsValue + "%"); 
+            lsCondition = " AND sPackngDs LIKE  "+ SQLUtil.toSQL(fsValue + "%"); 
         } else 
-            lsCondition = " sPackngDs = " + SQLUtil.toSQL(fsValue);
+            lsCondition = " AND sPackngDs = " + SQLUtil.toSQL(fsValue);
                
         lsSQL = "SELECT" +
                   "  sPackngCD" +
                   ", sPackngDs" +
                " FROM ECommerce_Packaging a" +
-               " WHERE cRecdStat = 1";
+               " WHERE cRecdStat = 1" + lsCondition;
                
         return lsSQL;
     }
@@ -772,7 +773,7 @@ public class WayBill {
             p_sMessage = "No transaction was loaded.";
             return false;
         }
-        
+        pbRecExist = true;
         p_nEditMode = EditMode.READY;
         
         return true;
@@ -792,6 +793,70 @@ public class WayBill {
         p_nEditMode = EditMode.UPDATE;
         return true;
     }
-
+    private boolean isEntryOK() throws SQLException{           
+        //validate master               
+        if ("".equals((String) getMaster("sTrackrNo"))){
+            p_sMessage = "Invalid Tracker Number Detected!!! \n Verify your Entries then Try Again!!!";
+            return false;
+        }
+        
+        return true;
+    }
+    public boolean SaveTransaction() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (p_nEditMode != EditMode.ADDNEW &&
+            p_nEditMode != EditMode.UPDATE){
+            p_sMessage = "Invalid edit mode detected.";
+            return false;
+        }
+        
+        if (!isEntryOK()) return false;
+        
+        
+        int lnCtr = 1;
+        int lnRow;
+        String lsSQL;
+        
+        lnRow = getOrderItemCount();
+//        while(lnCtr <= lnRow ){
+//            setOrder(lnCtr, "dModified", p_oApp.getServerDate().toString());
+//            String transNox = (String)getPayment(lnCtr, "sTransNox");
+//            
+//            if (!isEntryOK(lnCtr)) return false;
+//            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
+//                                        PAYMENT_TABLE, 
+//                                        "",
+//                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
+//                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
+//            
+//            if (!lsSQL.isEmpty()){
+//                
+//                if (!p_bWithParent) p_oApp.beginTrans();
+//                if (!lsSQL.isEmpty()){
+//                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
+//                        if (!p_bWithParent) p_oApp.rollbackTrans();
+//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+//                        return false;
+//                    }
+//                }
+//                
+//                p_nEditMode = EditMode.UNKNOWN;
+//                
+//                if (!p_bWithParent) p_oApp.commitTrans();
+//                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
+//                return true;
+//            }
+//            lnCtr++;
+//        }
+            
+        
+        return true;
+    }
 
 }

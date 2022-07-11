@@ -763,4 +763,71 @@ public class Pickup {
     }
 
 
+    private boolean isEntryOK() throws SQLException{           
+        //validate master               
+        if ("".equals((String) getMaster("sBatchNox"))){
+            p_sMessage = "Invalid Batch Number Detected!!! \n Verify your Entries then Try Again!!!";
+            return false;
+        }
+        
+        
+        return true;
+    }
+    public boolean SaveTransaction() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        if (p_nEditMode != EditMode.ADDNEW &&
+            p_nEditMode != EditMode.UPDATE){
+            p_sMessage = "Invalid edit mode detected.";
+            return false;
+        }
+        
+        if (!isEntryOK()) return false;
+        
+        
+        int lnCtr = 1;
+        int lnRow;
+        String lsSQL;
+        
+        lnRow = getOrderItemCount();
+//        while(lnCtr <= lnRow ){
+//            setOrder(lnCtr, "dModified", p_oApp.getServerDate().toString());
+//            String transNox = (String)getPayment(lnCtr, "sTransNox");
+//            
+//            if (!isEntryOK(lnCtr)) return false;
+//            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
+//                                        PAYMENT_TABLE, 
+//                                        "",
+//                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
+//                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
+//            
+//            if (!lsSQL.isEmpty()){
+//                
+//                if (!p_bWithParent) p_oApp.beginTrans();
+//                if (!lsSQL.isEmpty()){
+//                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
+//                        if (!p_bWithParent) p_oApp.rollbackTrans();
+//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+//                        return false;
+//                    }
+//                }
+//                
+//                p_nEditMode = EditMode.UNKNOWN;
+//                
+//                if (!p_bWithParent) p_oApp.commitTrans();
+//                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
+//                return true;
+//            }
+//            lnCtr++;
+//        }
+            
+        
+        return true;
+    }
+
 }

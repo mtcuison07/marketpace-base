@@ -65,7 +65,7 @@ public class ClientLoad {
     @Test
     public void test02LoadClient() {
         try {
-            if (trans.SearchRecord("GAP020202528", true)){
+            if (trans.SearchRecord("GAP022000006", true)){
                 trans.displayMasFields();   
                 
                 System.out.println("Last Name --> " + (String) trans.getMaster("sLastName"));
@@ -94,7 +94,7 @@ public class ClientLoad {
     @Test
     public void test03LoadClientOrder() {
         try {
-            if (trans.SearchRecord("GAP0190554", true)){
+            if (trans.SearchRecord("GAP022000006", true)){
                 trans.displayMasFields();   
                 
                 System.out.println("Last Name --> " + (String) trans.getMaster("sLastName"));
@@ -107,7 +107,7 @@ public class ClientLoad {
                 System.out.println("Mobile No. --> " + (String) trans.getMaster("sMobileNo"));
                 System.out.println("Email Add --> " + (String) trans.getMaster("sEmailAdd"));
                 System.out.println("Client ID --> " + (String) trans.getMaster("sEmployNo"));
-                if(trans.LoadOrder("GAP022000002")){
+                if(trans.LoadOrder("GAP022000006")){
                     for (int lnCtr = 1; lnCtr <= trans.getOrderItemCount(); lnCtr++){
                         System.out.println("No.: " + lnCtr);
                         System.out.println("TransNox: " + (String) trans.getOrder(lnCtr,"sTransNox"));
