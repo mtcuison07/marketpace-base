@@ -51,23 +51,23 @@ public class ClientProfilingTest {
     @Test
     public void test02LoadClient() {
         try {
-            if (trans.OpenRecord("GAP022000848", true)){  
+            if (trans.OpenRecord("GAP022000848")){  
             
-                if("0".equals((String) trans.getMaster("cVerified")) ||
-                    "0".equals(trans.getUserPicture("cVerified")) ||
-                    "0".equals(trans.getUserProfile("cVerified")) ||
-                    "0".equals(trans.getUserEmail("cVerified")) ||
-                    "0".equals(trans.getUserMobileNo("cVerified"))){
-                    System.out.println("Master ID --> " + (String) trans.getMaster("cVerified"));
-                    System.out.println("User Picture --> " + (String) trans.getUserPicture("cVerified"));
-                    System.out.println("User Profile --> " + (String) trans.getUserProfile("cVerified"));
-                    System.out.println("User Email --> " + (String) trans.getUserEmail("cVerified"));
-                    System.out.println("User Mobile No --> " + (String) trans.getUserMobileNo("cVerified"));
-                
-                }else{
-                    System.out.println("Status --> FULLY VERIFIED");
-                }
-                    
+//                if("0".equals((String) trans.getMaster("cVerified")) ||
+//                    "0".equals(trans.getUserPicture("cVerified")) ||
+//                    "0".equals(trans.getUserProfile("cVerified")) ||
+//                    "0".equals(trans.getUserEmail("cVerified")) ||
+//                    "0".equals(trans.getUserMobileNo("cVerified"))){
+//                    System.out.println("Master ID --> " + (String) trans.getMaster("cVerified"));
+//                    System.out.println("User Picture --> " + (String) trans.getUserPicture("cVerified"));
+//                    System.out.println("User Profile --> " + (String) trans.getUserProfile("cVerified"));
+//                    System.out.println("User Email --> " + (String) trans.getUserEmail("cVerified"));
+//                    System.out.println("User Mobile No --> " + (String) trans.getUserMobileNo("cVerified"));
+//                
+//                }else{
+//                    System.out.println("Status --> FULLY VERIFIED");
+//                }
+//                    
             } else
                 fail(trans.getMessage());
         } catch (SQLException e) {
