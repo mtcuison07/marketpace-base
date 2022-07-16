@@ -4,12 +4,16 @@
  */
 package org.rmj.marketplace.base;
 
+import com.sun.rowset.CachedRowSetImpl;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.Date;
+import javax.sql.RowSetMetaData;
 import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
+import javax.sql.rowset.RowSetMetaDataImpl;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
@@ -21,8 +25,8 @@ import org.rmj.appdriver.constants.EditMode;
  */
 public class ClientProfiling {
     
-    private final String MASTER_TABLE = "App_User_Master_ID";
-    private final String CLIENT_TABLE = "Client_Master";
+    private final String MASTER_ID_TABLE = "App_User_Master_ID";
+    private final String MASTER_TABLE = "App_User_Master";
     private final String USER_PICTURE_TABLE = "App_User_Picture";
     private final String USER_PROFILE_TABLE = "App_User_Profile";
     
@@ -40,6 +44,9 @@ public class ClientProfiling {
     private String p_sMessage;
     private boolean p_bWithUI = true;
 
+    private CachedRowSet p_oMaster;
+    private CachedRowSet p_oDetail;
+    private CachedRowSet p_oVerify;
     private CachedRowSet p_oMasterID;
     private CachedRowSet p_oPicture;
     private CachedRowSet p_oProfile;
@@ -80,15 +87,230 @@ public class ClientProfiling {
     public Object getMaster(int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
+        p_oMaster.first();
+        return p_oMaster.getObject(fnIndex);
+    }
+    
+    public Object getMaster(String fsIndex) throws SQLException{
+        return getMaster(getColumnIndex(p_oMaster, fsIndex));
+    }
+    
+    public void setMaster(int fnIndex, Object foValue) throws SQLException{
+        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
+            System.out.println("Invalid Edit Mode Detected.");
+            return;
+        }
+        
+        p_oMaster.first();
+        
+        switch (fnIndex){
+            case 1: //sUserIDxx
+            case 2: //sIDCodex1
+            case 3: //sIDCodex2
+                p_oMaster.updateString(fnIndex, (String) foValue);
+                p_oMaster.updateRow();
+
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
+                break;
+        }
+    }
+    
+    public void setMaster(String fsIndex, Object foValue) throws SQLException{
+        setMaster(getColumnIndex(p_oMaster, fsIndex), foValue);
+    }
+    
+    public Object getDetail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oDetail.absolute(fnRow);
+        return p_oDetail.getObject(fnIndex);
+    }
+    
+    public Object getDetail(int fnRow, String fsIndex) throws SQLException{
+        return getDetail(fnRow, getColumnIndex(p_oDetail, fsIndex));
+    }
+    
+    public int getItemCount() throws SQLException{
+        p_oDetail.last();
+        return p_oDetail.getRow();
+    }
+    
+    private boolean createDetail() throws SQLException{
+        RowSetMetaData meta = new RowSetMetaDataImpl();        
+
+        meta.setColumnCount(8);
+        
+        meta.setColumnName(1, "sUserIDxx");
+        meta.setColumnLabel(1, "sUserIDxx");
+        meta.setColumnType(1, Types.VARCHAR);
+        meta.setColumnDisplaySize(1, 12);
+        
+        meta.setColumnName(2, "sUserName");
+        meta.setColumnLabel(2, "sUserName");
+        meta.setColumnType(2, Types.VARCHAR);
+        meta.setColumnDisplaySize(1, 64);
+        
+        meta.setColumnName(3, "sEmailAdd");
+        meta.setColumnLabel(3, "sEmailAdd");
+        meta.setColumnType(3, Types.VARCHAR);
+        meta.setColumnDisplaySize(3, 64);
+        
+        
+        meta.setColumnName(4, "cIDVerify");
+        meta.setColumnLabel(4, "cIDVerify");
+        meta.setColumnType(4, Types.VARCHAR);
+        meta.setColumnDisplaySize(4, 1);
+        
+        
+        meta.setColumnName(5, "cPrVerify");
+        meta.setColumnLabel(5, "cPrVerify");
+        meta.setColumnType(5, Types.VARCHAR);
+        meta.setColumnDisplaySize(5, 1);
+        
+        meta.setColumnName(6, "cPcVerify");
+        meta.setColumnLabel(6, "cPcVerify");
+        meta.setColumnType(6, Types.VARCHAR);
+        meta.setColumnDisplaySize(6, 1);
+        
+        meta.setColumnName(7, "cEmVerify");
+        meta.setColumnLabel(7, "cEmVerify");
+        meta.setColumnType(7, Types.VARCHAR);
+        meta.setColumnDisplaySize(7, 1);
+        
+        meta.setColumnName(8, "cMoVerify");
+        meta.setColumnLabel(8, "cMoVerify");
+        meta.setColumnType(8, Types.VARCHAR);
+        meta.setColumnDisplaySize(8, 1);
+        
+        p_oDetail = new CachedRowSetImpl();
+        p_oDetail.setMetaData(meta);        
+        
+        
+        p_sMessage = ""; 
+        
+        String lsSQL = "SELECT" +
+                        "  sUserIDxx" +
+                        " FROM App_User_Master " +
+                        " WHERE sProdctID = 'GuanzonApp' " +
+                        " AND cMPCLient = 1 " +
+                        " ORDER BY dTimeStmp DESC";
+        
+//        p_oMaster.first();
+//        if (!p_oMaster.getString("sUserIDxx").isEmpty())
+//        lsSQL = MiscUtil.addCondition(lsSQL, "sUserIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sUserIDxx")));
+        
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        int lnRow = 1;
+        
+        while (loRS.next()){
+            
+            ResultSet loRS1 = p_oApp.executeQuery(getSQ_Master(loRS.getString("sUserIDxx")));
+            while(loRS1.next()){
+                p_oDetail.last();
+                p_oDetail.moveToInsertRow(); //add new
+                
+                MiscUtil.initRowSet(p_oDetail);    //clear data    
+                p_oDetail.updateString("sUserIDxx", loRS1.getString("sUserIDxx"));
+                p_oDetail.updateString("sUserName", loRS1.getString("sUserName"));
+                p_oDetail.updateString("sEmailAdd", loRS1.getString("sEmailAdd"));
+                p_oDetail.updateString("cIDVerify", loRS1.getString("cIDVerify"));
+                p_oDetail.updateString("cPrVerify", loRS1.getString("cPrVerify"));
+                p_oDetail.updateString("cPcVerify", loRS1.getString("cPcVerify"));
+                p_oDetail.updateString("cEmVerify", loRS1.getString("cEmVerify"));
+                p_oDetail.updateString("cMoVerify", loRS1.getString("cMoVerify"));
+
+                p_oDetail.insertRow();
+                p_oDetail.moveToCurrentRow(); //save data
+                
+            }
+            
+        
+           
+            
+            MiscUtil.close(loRS1);
+            lnRow++;
+        }
+        if (MiscUtil.RecordCount(loRS) == 0){
+            MiscUtil.close(loRS);
+            p_sMessage = "No record found for the given criteria.";
+            return false;
+        }
+        MiscUtil.close(loRS);
+        return true;
+    }
+    private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
+         int lnIndex = 0;
+         int lnRow = loRS.getMetaData().getColumnCount();
+
+         for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
+             if (fsValue.equals(loRS.getMetaData().getColumnLabel(lnCtr))){
+                 lnIndex = lnCtr;
+                 break;
+             }
+         }
+         
+         return lnIndex;
+     }
+    private String getSQ_Master(String fsValue){
+        String lsSQL = "";
+        lsSQL = "SELECT  " +
+                "  a.sUserIDxx, " +
+                "  a.sUserName,   " +
+                "  a.sEmailAdd, " +
+                "  IFNULL(b.cVerified,'0') cPrVerify, " +
+                "  IFNULL(c.cVerified,'0') cPcVerify, " +
+                "  IFNULL(d.cVerified,'0') cIDVerify, " +
+                "  IFNULL(e.cVerified,'0') cEmVerify, " +
+                "  IFNULL(f.cVerified,'0') cMoVerify " +
+                "FROM App_User_Master a " +
+                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Profile WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) b   " +
+                "    ON a.sUserIDxx = b.sUserIDxx    " +
+                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Picture WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) c   " +
+                "    ON a.sUserIDxx = c.sUserIDxx    " +
+                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Master_ID WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) d   " +
+                "    ON a.sUserIDxx = d.sUserIDxx    " +
+                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Email WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) e   " +
+                "    ON a.sUserIDxx = e.sUserIDxx    " +
+                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Mobile WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) f   " +
+                "    ON a.sUserIDxx = f.sUserIDxx    " +
+                "WHERE a.sProdctID = 'GuanzonApp'   " +
+                "  AND a.sUserIDxx = " + SQLUtil.toSQL(fsValue);
+        return lsSQL;
+    }
+    public boolean LoadList() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }  
+        
+        return createDetail();
+    }
+    
+
+    public Object getMasterID(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oMasterID.absolute(fnRow);
+        return p_oMasterID.getObject(fnIndex);
+    }
+    
+    public Object getMasterID(int fnRow, String fsIndex) throws SQLException{
+        return getMasterID(fnRow, getColumnIndex(p_oMasterID, fsIndex));
+    }
+    
+    public Object getMasterID(int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
         p_oMasterID.first();
         return p_oMasterID.getObject(fnIndex);
     }
     
-    public Object getMaster(String fsIndex) throws SQLException{
-        return getMaster(getColumnIndex(p_oMasterID, fsIndex));
+    public Object getMasterID(String fsIndex) throws SQLException{
+        return getMasterID(getColumnIndex(p_oMasterID, fsIndex));
     }
     
-    public void setMaster(int fnIndex, Object foValue) throws SQLException{
+    public void setMasterID(int fnIndex, Object foValue) throws SQLException{
         if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
             System.out.println("Invalid Edit Mode Detected.");
             return;
@@ -136,45 +358,60 @@ public class ClientProfiling {
         }
     }
     
-    public void setMaster(String fsIndex, Object foValue) throws SQLException{
-        setMaster(getColumnIndex(p_oMasterID, fsIndex), foValue);
+    public int getMasterIDItemCount() throws SQLException{
+        if (p_oMasterID == null) return 0;
+        
+        p_oMasterID.last();
+        return p_oMasterID.getRow();
     }
-    private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
-         int lnIndex = 0;
-         int lnRow = loRS.getMetaData().getColumnCount();
-
-         for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
-             if (fsValue.equals(loRS.getMetaData().getColumnLabel(lnCtr))){
-                 lnIndex = lnCtr;
-                 break;
-             }
-         }
-         
-         return lnIndex;
-     }
     
+    public void setMasterID(String fsIndex, Object foValue) throws SQLException{
+        setMasterID(getColumnIndex(p_oMasterID, fsIndex), foValue);
+    }
     private String getSQ_MasterID(){
         String lsSQL = "";
+        
         String lsCondition = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            lsCondition = " cVerified IN (" + lsSQL.substring(2) + ")";
+        } else 
+            lsCondition = " cVerified = " + SQLUtil.toSQL(lsStat);
+           
         
         lsSQL = "SELECT " +
-                    "sUserIDxx " +
-                    ", dTransact " +
-                    ", sIDCodex1 " +
-                    ", sIDNoxxx1 " +
-                    ", sIDFrntx1 " +
-                    ", sIDBackx1 " +
-                    ", sIDCodex2 " +
-                    ", sIDNoxxx2 " +
-                    ", sIDFrntx2 " +
-                    ", sIDBackx2 " +
-                    ", cVerified " +
-                    ", dVerified " +
-                    ", sVerified " + 
-                " FROM " + MASTER_TABLE + 
-                " WHERE " + 
-                " ORDER BY dTransact DESC LIMIT 1";
+                    "  IFNULL(sUserIDxx, '') sUserIDxx " +
+                    ", IFNULL(dTransact, '') dTransact " +
+                    ", IFNULL(sIDCodex1, '') sIDCodex1 " +
+                    ", IFNULL(sIDNoxxx1, '') sIDNoxxx1 " +
+                    ", IFNULL(sIDFrntx1, '') sIDFrntx1 " +
+                    ", IFNULL(sIDBackx1, '') sIDBackx1 " +
+                    ", IFNULL(sIDCodex2, '') sIDCodex2 " +
+                    ", IFNULL(sIDNoxxx2, '') sIDNoxxx2 " +
+                    ", IFNULL(sIDFrntx2, '') sIDFrntx2 " +
+                    ", IFNULL(sIDBackx2, '') sIDBackx2 " +
+                    ", IFNULL(cVerified, '0') cVerified " +
+                    ", IFNULL(dVerified, '') dVerified " +
+                    ", IFNULL(sVerified, '') sVerified " + 
+                " FROM " + MASTER_ID_TABLE + 
+                " WHERE ";
         return lsSQL;
+    }
+    
+
+    public Object getUserPicture(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oPicture.absolute(fnRow);
+        return p_oPicture.getObject(fnIndex);
+    }
+    
+    public Object getUserPicture(int fnRow, String fsIndex) throws SQLException{
+        return getUserPicture(fnRow, getColumnIndex(p_oPicture, fsIndex));
     }
     
     public Object getUserPicture(int fnIndex) throws SQLException{
@@ -186,6 +423,13 @@ public class ClientProfiling {
     
     public Object getUserPicture(String fsIndex) throws SQLException{
         return getUserPicture(getColumnIndex(p_oPicture, fsIndex));
+    }
+    
+    public int getUserPictureItemCount() throws SQLException{
+        if (p_oPicture == null) return 0;
+        
+        p_oPicture.last();
+        return p_oPicture.getRow();
     }
     
     public void setUserPicture(int fnIndex, Object foValue) throws SQLException{
@@ -237,25 +481,45 @@ public class ClientProfiling {
     }
     private String getSQ_Picture(){
         String lsSQL = "";
-      
+        
+        String lsCondition = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            lsCondition = " cVerified IN (" + lsSQL.substring(2) + ")";
+        } else 
+            lsCondition = " cVerified = " + SQLUtil.toSQL(lsStat);
+           
         lsSQL =  "SELECT" +
-                    " sUserIDxx " +
-                    ", dTransact " +
-                    ", sImageNme " +
-                    ", sMD5Hashx " +
-                    ", sImagePth " +
-                    ", dImgeDate " +
-                    ", cImgeStat " +
-                    ", cVerified " +
-                    ", dVerified " +
-                    ", sVerified " +
+                    "  IFNULL(sUserIDxx, '') sUserIDxx " +
+                    ", IFNULL(dTransact, '') dTransact " +
+                    ", IFNULL(sImageNme, '') sImageNme " +
+                    ", IFNULL(sMD5Hashx, '') sMD5Hashx " +
+                    ", IFNULL(sImagePth, '') sImagePth " +
+                    ", IFNULL(dImgeDate, '') dImgeDate " +
+                    ", IFNULL(cImgeStat, '0') cImgeStat " +
+                    ", IFNULL(cVerified, '0') cVerified " +
+                    ", IFNULL(dVerified, '') dVerified " +
+                    ", IFNULL(sVerified, '') sVerified " +
                 " FROM " + USER_PICTURE_TABLE + 
-                " WHERE " + 
-                " ORDER BY dTransact DESC LIMIT 1";
+                " WHERE ";
         return lsSQL;
     }
     
     
+    public Object getUserProfile(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oProfile.absolute(fnRow);
+        return p_oProfile.getObject(fnIndex);
+    }
+    
+    public Object getUserProfile(int fnRow, String fsIndex) throws SQLException{
+        return getUserProfile(fnRow, getColumnIndex(p_oProfile, fsIndex));
+    }
     public Object getUserProfile(int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
@@ -265,6 +529,13 @@ public class ClientProfiling {
     
     public Object getUserProfile(String fsIndex) throws SQLException{
         return getUserProfile(getColumnIndex(p_oProfile, fsIndex));
+    }
+    
+    public int getUserProfileItemCount() throws SQLException{
+        if (p_oProfile == null) return 0;
+        
+        p_oProfile.last();
+        return p_oProfile.getRow();
     }
     
     public void setUserProfile(int fnIndex, Object foValue) throws SQLException{
@@ -327,32 +598,54 @@ public class ClientProfiling {
     }
     private String getSQ_Profile(){
         String lsSQL = "";
+        
+        String lsCondition = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            lsCondition = " cVerified IN (" + lsSQL.substring(2) + ")";
+        } else 
+            lsCondition = " cVerified = " + SQLUtil.toSQL(lsStat);
+           
         lsSQL = "SELECT " +
                     "sUserIDxx " +
-                    ", dTransact " +
-                    ", sLastName " +
-                    ", sFrstName " +
-                    ", sMiddName " +
-                    ", sMaidenNm " +
-                    ", sSuffixNm " +
-                    ", cGenderCd " +
-                    ", cCvilStat " +
-                    ", dBirthDte " +
-                    ", sBirthPlc " +
-                    ", sHouseNo1 " +
-                    ", sAddress1 " +
-                    ", sTownIDx1 " +
-                    ", sClientID " +
-                    ", sHouseNo2 " +
-                    ", sAddress2 " +
-                    ", sTownIDx2 " +
-                    ", cVerified " +
-                    ", dVerified " +
-                    ", sVerified " + 
+                    ", IFNULL(dTransact, '')dTransact " +
+                    ", IFNULL(sLastName, '')sLastName " +
+                    ", IFNULL(sFrstName, '') sFrstName " +
+                    ", IFNULL(sMiddName, '') sMiddName " +
+                    ", IFNULL(sMaidenNm, '') sMaidenNm " +
+                    ", IFNULL(sSuffixNm, '') sSuffixNm " +
+                    ", IFNULL(cGenderCd, '0') cGenderCd " +
+                    ", IFNULL(cCvilStat, '0') cCvilStat " +
+                    ", IFNULL(dBirthDte,'') dBirthDte " +
+                    ", IFNULL(sBirthPlc, '') sBirthPlc " +
+                    ", IFNULL(sHouseNo1, '') sHouseNo1 " +
+                    ", IFNULL(sAddress1, '') sAddress1 " +
+                    ", IFNULL(sTownIDx1, '') sTownIDx1 " +
+                    ", IFNULL(sClientID, '') sClientID " +
+                    ", IFNULL(sHouseNo2, '') sHouseNo2 " +
+                    ", IFNULL(sAddress2, '') sAddress2 " +
+                    ", IFNULL(sTownIDx2, '') sTownIDx2 " +
+                    ", IFNULL(cVerified, '0') cVerified " +
+                    ", IFNULL(dVerified, '') dVerified " +
+                    ", IFNULL(sVerified, '') sVerified " + 
                 " FROM " + USER_PROFILE_TABLE  + 
-                " WHERE " + 
-                " ORDER BY dTransact DESC LIMIT 1";
+                " WHERE ";
         return lsSQL;
+    }
+    
+    public Object getUserEmail(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oEmail.absolute(fnRow);
+        return p_oEmail.getObject(fnIndex);
+    }
+    
+    public Object getUserEmail(int fnRow, String fsIndex) throws SQLException{
+        return getUserEmail(fnRow, getColumnIndex(p_oEmail, fsIndex));
     }
     public Object getUserEmail(int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
@@ -365,6 +658,12 @@ public class ClientProfiling {
         return getUserEmail(getColumnIndex(p_oEmail, fsIndex));
     }
     
+    public int getUserEmailItemCount() throws SQLException{
+        if (p_oEmail == null) return 0;
+        
+        p_oEmail.last();
+        return p_oEmail.getRow();
+    }
     public void setUserEmail(int fnIndex, Object foValue) throws SQLException{
         if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
             System.out.println("Invalid Edit Mode Detected.");
@@ -410,21 +709,41 @@ public class ClientProfiling {
     }
     private String getSQ_Email(){
         String lsSQL = "";
-       
+        
+        String lsCondition = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            lsCondition = " cVerified IN (" + lsSQL.substring(2) + ")";
+        } else 
+            lsCondition = " cVerified = " + SQLUtil.toSQL(lsStat);
+           
         lsSQL = "SELECT " +
-                    "sUserIDxx " +
-                    ", dTransact " +
-                    ", sEmailAdd " +
-                    ", cVerified " +
-                    ", dVerified " +
-                    ", sVerified " +
-                    ", cRecdStat " + 
+                    "  IFNULL(sUserIDxx, '') sUserIDxx " +
+                    ", IFNULL(dTransact, '') dTransact " +
+                    ", IFNULL(sEmailAdd, '') sEmailAdd " +
+                    ", IFNULL(cVerified, '0') cVerified " +
+                    ", IFNULL(dVerified, '') dVerified " +
+                    ", IFNULL(sVerified, '') sVerified " +
+                    ", IFNULL(cRecdStat, '0') cRecdStat " + 
                 "FROM " + USER_EMAIL_TABLE + 
-                " WHERE " + 
-                " ORDER BY dTransact DESC LIMIT 1";
+                " WHERE ";
         return lsSQL;
     }
     
+    public Object getUserMobileNo(int fnRow, int fnIndex) throws SQLException{
+        if (fnIndex == 0) return null;
+        
+        p_oMobile.absolute(fnRow);
+        return p_oMobile.getObject(fnIndex);
+    }
+    
+    public Object getUserMobileNo(int fnRow, String fsIndex) throws SQLException{
+        return getUserMobileNo(fnRow, getColumnIndex(p_oMobile, fsIndex));
+    }
     public Object getUserMobileNo(int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
@@ -436,6 +755,12 @@ public class ClientProfiling {
         return getUserMobileNo(getColumnIndex(p_oMobile, fsIndex));
     }
     
+    public int getUserMobileNoItemCount() throws SQLException{
+        if (p_oMobile == null) return 0;
+        
+        p_oMobile.last();
+        return p_oMobile.getRow();
+    }
     public void setUserMobileNo(int fnIndex, Object foValue) throws SQLException{
         if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
             System.out.println("Invalid Edit Mode Detected.");
@@ -486,27 +811,37 @@ public class ClientProfiling {
     }
     private String getSQ_MobileNo(){
         String lsSQL = "";
+        
+        String lsCondition = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            lsCondition = " cVerified IN (" + lsSQL.substring(2) + ")";
+        } else 
+            lsCondition = " cVerified = " + SQLUtil.toSQL(lsStat);
+           
        
         lsSQL = "SELECT" +
-                    " sUserIDxx " +
-                    ", dTransact " +
-                    ", sMobileNo " +
-                    ", sOTPasswd " +
-                    ", cUserVrfd " +
-                    ", dUserVrfd " +
-                    ", cVerified " +
-                    ", dVerified " +
-                    ", sVerified " +
-                    ", cRecdStat " + 
+                    "  IFNULL(sUserIDxx, '') sUserIDxx " +
+                    ", IFNULL(dTransact, '') dTransact " +
+                    ", IFNULL(sMobileNo, '') sMobileNo " +
+                    ", IFNULL(sOTPasswd, '') sOTPasswd " +
+                    ", IFNULL(cUserVrfd, '0') cUserVrfd " +
+                    ", IFNULL(dUserVrfd, '') dUserVrfd " +
+                    ", IFNULL(cVerified, '0') cVerified " +
+                    ", IFNULL(dVerified, '') dVerified " +
+                    ", IFNULL(sVerified, '') sVerified " +
+                    ", IFNULL(cRecdStat, '0') cRecdStat " + 
                 " FROM " + USER_MOBILE_TABLE + 
-                " WHERE " +
-                " ORDER BY dTransact DESC LIMIT 1";
+                " WHERE " ;
         return lsSQL;
                 
     }
     
-    
-    public boolean OpenRecord(String fsValue, boolean fbByUserID) throws SQLException{
+    public boolean OpenRecord(String fsValue) throws SQLException{
         p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
@@ -521,7 +856,6 @@ public class ClientProfiling {
         loadUserProfile(fsValue);
         loadUserEmail(fsValue);
         loadUserMobile(fsValue);
-        
         p_nEditMode = EditMode.READY;
         
         return true;
@@ -535,18 +869,33 @@ public class ClientProfiling {
                     isMobileNoVerefied();
     }
     public boolean isIDVerefied() throws SQLException{
-        return "1".equals(getMaster("cVerified"));
+        if(getMasterIDItemCount() == 0){
+            return false;
+        }
+        return "1".equals(getMasterID("cVerified"));
     }
     public boolean isPictureVerefied() throws SQLException{
+        if(getUserPictureItemCount()== 0){
+            return false;
+        }
         return "1".equals(getUserPicture("cVerified"));
     }
     public boolean isProfileVerefied() throws SQLException{
+        if(getUserProfileItemCount()== 0){
+            return false;
+        }
         return "1".equals(getUserProfile("cVerified"));
     }
     public boolean isEmailVerefied() throws SQLException{
+        if(getUserEmailItemCount()== 0){
+            return false;
+        }
         return "1".equals(getUserEmail("cVerified"));
     }
     public boolean isMobileNoVerefied() throws SQLException{
+        if(getUserMobileNoItemCount()== 0){
+            return false;
+        }
         return "1".equals(getUserMobileNo("cVerified"));
     }
     private boolean loadMasterID(String fsValue) throws SQLException{
@@ -561,11 +910,11 @@ public class ClientProfiling {
         
         String lsSQL;
         ResultSet loRS;
-        RowSetFactory factory = RowSetProvider.newFactory();
-        
         //open master
-        lsSQL = MiscUtil.addCondition(getSQ_MasterID(), " sUserIDxx = " + SQLUtil.toSQL(fsValue));
+        
+        lsSQL = getSQ_MasterID() + " sUserIDxx = " + SQLUtil.toSQL(fsValue) +  " ORDER BY dTransact DESC LIMIT 1" ;
         loRS = p_oApp.executeQuery(lsSQL);
+        RowSetFactory factory = RowSetProvider.newFactory();
         p_oMasterID = factory.createCachedRowSet();
         p_oMasterID.populate(loRS);
         MiscUtil.close(loRS);
@@ -575,6 +924,12 @@ public class ClientProfiling {
             p_sMessage = "No record was loaded.";
             return false;
         }
+        
+
+        
+        
+        
+        
         p_nEditMode = EditMode.READY;
         
         return true;
@@ -594,7 +949,9 @@ public class ClientProfiling {
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        lsSQL = MiscUtil.addCondition(getSQ_Picture(), " sUserIDxx = " + SQLUtil.toSQL(fsValue));
+        lsSQL = getSQ_Picture() + " sUserIDxx = " + SQLUtil.toSQL(fsValue) +  " ORDER BY dTransact DESC LIMIT 1" ;
+        
+//        lsSQL = MiscUtil.addCondition(getSQ_Picture(), " sUserIDxx = " + SQLUtil.toSQL(fsValue));
         loRS = p_oApp.executeQuery(lsSQL);
         p_oPicture = factory.createCachedRowSet();
         p_oPicture.populate(loRS);
@@ -625,7 +982,9 @@ public class ClientProfiling {
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        lsSQL = MiscUtil.addCondition(getSQ_Profile(), " sUserIDxx = " + SQLUtil.toSQL(fsValue));
+        lsSQL = getSQ_Profile() + " sUserIDxx = " + SQLUtil.toSQL(fsValue) +  " ORDER BY dTransact DESC LIMIT 1" ;
+        
+//        lsSQL = MiscUtil.addCondition(getSQ_Profile(), " sUserIDxx = " + SQLUtil.toSQL(fsValue));
         loRS = p_oApp.executeQuery(lsSQL);
         p_oProfile = factory.createCachedRowSet();
         p_oProfile.populate(loRS);
@@ -656,7 +1015,9 @@ public class ClientProfiling {
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        lsSQL = MiscUtil.addCondition(getSQ_Email(), " sUserIDxx = " + SQLUtil.toSQL(fsValue));
+        lsSQL = getSQ_Email() + " sUserIDxx = " + SQLUtil.toSQL(fsValue) +  " ORDER BY dTransact DESC LIMIT 1" ;
+        
+//        lsSQL = MiscUtil.addCondition(getSQ_Email(), " sUserIDxx = " + SQLUtil.toSQL(fsValue));
         loRS = p_oApp.executeQuery(lsSQL);
         p_oEmail = factory.createCachedRowSet();
         p_oEmail.populate(loRS);
@@ -687,7 +1048,9 @@ public class ClientProfiling {
         RowSetFactory factory = RowSetProvider.newFactory();
         
         //open master
-        lsSQL = MiscUtil.addCondition(getSQ_MobileNo(), " sUserIDxx = " + SQLUtil.toSQL(fsValue));
+        lsSQL = getSQ_MobileNo() + " sUserIDxx = " + SQLUtil.toSQL(fsValue) +  " ORDER BY dTransact DESC LIMIT 1" ;
+        
+//        lsSQL = MiscUtil.addCondition(getSQ_MobileNo(), " sUserIDxx = " + SQLUtil.toSQL(fsValue));
         loRS = p_oApp.executeQuery(lsSQL);
         p_oMobile = factory.createCachedRowSet();
         p_oMobile.populate(loRS);
@@ -717,19 +1080,19 @@ public class ClientProfiling {
             p_sMessage = "Invalid edit mode detected.";
             return false;
         } 
-        String lsUserID = (String) getMaster("sUserIDxx");
+        String lsUserID = (String) getMasterID("sUserIDxx");
         p_oMasterID.updateObject("sVerified", p_oApp.getUserID());
         p_oMasterID.updateObject("dVerified", p_oApp.getServerDate());
 
         lsSQL = MiscUtil.rowset2SQL(p_oMasterID, 
-                                    MASTER_TABLE, 
+                                    MASTER_ID_TABLE, 
                                     "", 
                                     "sUserIDxx = " + SQLUtil.toSQL(lsUserID));
 
         if (!lsSQL.isEmpty()){
             if (!p_bWithParent) p_oApp.beginTrans();
             if (!lsSQL.isEmpty()){
-                if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, lsUserID.substring(0, 4)) <= 0){
+                if (p_oApp.executeQuery(lsSQL, MASTER_ID_TABLE, p_sBranchCd, lsUserID.substring(0, 4)) <= 0){
                     if (!p_bWithParent) p_oApp.rollbackTrans();
                     p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
                     return false;
