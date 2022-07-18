@@ -611,9 +611,9 @@ public class ClientProfiling {
             lsCondition = " cVerified = " + SQLUtil.toSQL(lsStat);
            
         lsSQL = "SELECT " +
-                    "sUserIDxx " +
-                    ", IFNULL(dTransact, '')dTransact " +
-                    ", IFNULL(sLastName, '')sLastName " +
+                    "  IFNULL(sUserIDxx, '') sUserIDxx " +
+                    ", IFNULL(dTransact, '') dTransact " +
+                    ", IFNULL(sLastName, '') sLastName " +
                     ", IFNULL(sFrstName, '') sFrstName " +
                     ", IFNULL(sMiddName, '') sMiddName " +
                     ", IFNULL(sMaidenNm, '') sMaidenNm " +
@@ -841,25 +841,25 @@ public class ClientProfiling {
                 
     }
     
-    public boolean OpenRecord(String fsValue) throws SQLException{
-        p_nEditMode = EditMode.UNKNOWN;
-        
-        if (p_oApp == null){
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
-        
-        p_sMessage = "";
-        
-        loadMasterID(fsValue);
-        loadUserPicture(fsValue);
-        loadUserProfile(fsValue);
-        loadUserEmail(fsValue);
-        loadUserMobile(fsValue);
-        p_nEditMode = EditMode.READY;
-        
-        return true;
-    }
+//    public boolean OpenRecord(String fsValue) throws SQLException{
+//        p_nEditMode = EditMode.UNKNOWN;
+//        
+//        if (p_oApp == null){
+//            p_sMessage = "Application driver is not set.";
+//            return false;
+//        }
+//        
+//        p_sMessage = "";
+//        
+//        loadMasterID(fsValue);
+//        loadUserPicture(fsValue);
+//        loadUserProfile(fsValue);
+//        loadUserEmail(fsValue);
+//        loadUserMobile(fsValue);
+//        p_nEditMode = EditMode.READY;
+//        
+//        return true;
+//    }
     
     public boolean isVerefied() throws SQLException{
         return isIDVerefied() &&
@@ -898,7 +898,7 @@ public class ClientProfiling {
         }
         return "1".equals(getUserMobileNo("cVerified"));
     }
-    private boolean loadMasterID(String fsValue) throws SQLException{
+    public boolean loadMasterID(String fsValue) throws SQLException{
         p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
@@ -934,7 +934,7 @@ public class ClientProfiling {
         
         return true;
     }
-    private boolean loadUserPicture(String fsValue) throws SQLException{
+    public boolean loadUserPicture(String fsValue) throws SQLException{
         p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
@@ -967,7 +967,7 @@ public class ClientProfiling {
         return true;
     }
 
-    private boolean loadUserProfile(String fsValue) throws SQLException{
+    public boolean loadUserProfile(String fsValue) throws SQLException{
          p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
@@ -1000,7 +1000,7 @@ public class ClientProfiling {
         return true;
     }
 
-    private boolean loadUserEmail(String fsValue) throws SQLException{
+    public boolean loadUserEmail(String fsValue) throws SQLException{
         p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
@@ -1033,7 +1033,7 @@ public class ClientProfiling {
         return true;
     }
 
-    private boolean loadUserMobile(String fsValue) throws SQLException{
+    public boolean loadUserMobile(String fsValue) throws SQLException{
          p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
