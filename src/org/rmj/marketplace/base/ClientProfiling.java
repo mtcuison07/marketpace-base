@@ -14,9 +14,11 @@ import javax.sql.rowset.CachedRowSet;
 import javax.sql.rowset.RowSetFactory;
 import javax.sql.rowset.RowSetProvider;
 import javax.sql.rowset.RowSetMetaDataImpl;
+import org.json.simple.JSONObject;
 import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.appdriver.SQLUtil;
+import org.rmj.appdriver.agentfx.ui.showFXDialog;
 import org.rmj.appdriver.constants.EditMode;
 
 /**
@@ -53,6 +55,7 @@ public class ClientProfiling {
     private CachedRowSet p_oEmail;
     private CachedRowSet p_oMobile;
     private LTransaction p_oListener;
+    private LResultTown p_oTownListener;
     
     public ClientProfiling(GRider foApp, String fsBranchCd, boolean fbWithParent){        
         p_oApp = foApp;
@@ -70,6 +73,9 @@ public class ClientProfiling {
     }
     public void setListener(LTransaction foValue){
         p_oListener = foValue;
+    }
+    public void setListener(LResultTown foValue){
+        p_oTownListener = foValue;
     }
     
     public void setWithUI(boolean fbValue){
@@ -138,7 +144,7 @@ public class ClientProfiling {
     private boolean createDetail() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();        
 
-        meta.setColumnCount(8);
+        meta.setColumnCount(11);
         
         meta.setColumnName(1, "sUserIDxx");
         meta.setColumnLabel(1, "sUserIDxx");
@@ -182,6 +188,21 @@ public class ClientProfiling {
         meta.setColumnType(8, Types.VARCHAR);
         meta.setColumnDisplaySize(8, 1);
         
+        meta.setColumnName(9, "sMobileNo");
+        meta.setColumnLabel(9, "sMobileNo");
+        meta.setColumnType(9, Types.VARCHAR);
+        meta.setColumnDisplaySize(9, 13);
+        
+        meta.setColumnName(10, "sAddress1");
+        meta.setColumnLabel(10, "sAddress1");
+        meta.setColumnType(10, Types.VARCHAR);
+        meta.setColumnDisplaySize(10, 256);
+        
+        meta.setColumnName(11, "sAddress2");
+        meta.setColumnLabel(11, "sAddress2");
+        meta.setColumnType(11, Types.VARCHAR);
+        meta.setColumnDisplaySize(11, 256);
+        
         p_oDetail = new CachedRowSetImpl();
         p_oDetail.setMetaData(meta);        
         
@@ -219,6 +240,9 @@ public class ClientProfiling {
                 p_oDetail.updateString("cPcVerify", loRS1.getString("cPcVerify"));
                 p_oDetail.updateString("cEmVerify", loRS1.getString("cEmVerify"));
                 p_oDetail.updateString("cMoVerify", loRS1.getString("cMoVerify"));
+                p_oDetail.updateString("sMobileNo", loRS1.getString("sMobileNo"));
+                p_oDetail.updateString("sAddress1", loRS1.getString("sAddress1"));
+                p_oDetail.updateString("sAddress2", loRS1.getString("sAddress2"));
 
                 p_oDetail.insertRow();
                 p_oDetail.moveToCurrentRow(); //save data
@@ -252,29 +276,56 @@ public class ClientProfiling {
          
          return lnIndex;
      }
+    public boolean UpdateRecord() throws SQLException{
+        if (p_nEditMode != EditMode.READY){
+            p_sMessage = "Invalid edit mode.";
+            return false;
+        }
+        
+        p_nEditMode = EditMode.UPDATE;
+        return true;
+    }
+    
     private String getSQ_Master(String fsValue){
         String lsSQL = "";
-        lsSQL = "SELECT  " +
-                "  a.sUserIDxx, " +
-                "  a.sUserName,   " +
-                "  a.sEmailAdd, " +
-                "  IFNULL(b.cVerified,'0') cPrVerify, " +
-                "  IFNULL(c.cVerified,'0') cPcVerify, " +
-                "  IFNULL(d.cVerified,'0') cIDVerify, " +
-                "  IFNULL(e.cVerified,'0') cEmVerify, " +
-                "  IFNULL(f.cVerified,'0') cMoVerify " +
-                "FROM App_User_Master a " +
-                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Profile WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) b   " +
-                "    ON a.sUserIDxx = b.sUserIDxx    " +
-                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Picture WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) c   " +
-                "    ON a.sUserIDxx = c.sUserIDxx    " +
-                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Master_ID WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) d   " +
-                "    ON a.sUserIDxx = d.sUserIDxx    " +
-                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Email WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) e   " +
-                "    ON a.sUserIDxx = e.sUserIDxx    " +
-                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Mobile WHERE sUserIDxx = " + SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) f   " +
-                "    ON a.sUserIDxx = f.sUserIDxx    " +
-                "WHERE a.sProdctID = 'GuanzonApp'   " +
+        lsSQL = "SELECT   " +
+                "  a.sUserIDxx,  " +
+                "  a.sUserName,    " +
+                "  a.sEmailAdd,  " +
+                "  IFNULL(b.cVerified,'0') cPrVerify,  " +
+                "  IFNULL(c.cVerified,'0') cPcVerify,  " +
+                "  IFNULL(d.cVerified,'0') cIDVerify,  " +
+                "  IFNULL(e.cVerified,'0') cEmVerify,  " +
+                "  IFNULL(f.cVerified,'0') cMoVerify,  " +
+                "  IFNULL(f.sMobileNo,'') sMobileNo,  " +
+                "  IFNULL(b.sAddress1,'') sAddress1,   " +
+                "  IFNULL(b.sAddress2,'') sAddress2 " +
+                "FROM App_User_Master a  " +
+                "  LEFT JOIN (SELECT  " +
+                "     g.sUserIDxx, " +
+                "     g.cVerified, " +
+                "     CONCAT(IFNULL(g.sHouseNo1,''), ' ', IFNULL(g.sAddress1,''),' ',IFNULL(i.sBrgyName,''), ' ',IFNULL(h.sTownName,'')) AS sAddress1, " +
+                "     CONCAT(IFNULL(g.sHouseNo2,''), ' ', IFNULL(g.sAddress2,''),' ',IFNULL(k.sBrgyName,''), ' ',IFNULL(j.sTownName,'')) AS sAddress2  " +
+                "   FROM App_User_Profile g " +
+                "     LEFT JOIN TownCity h " +
+                "       ON  g.sTownIDx1  = h.sTownIDxx " +
+                "     LEFT JOIN Barangay i " +
+                "       ON  g.sBrgyIDx1  = i.sBrgyIDxx " +
+                "     LEFT JOIN TownCity j " +
+                "       ON  g.sTownIDx2  = j.sTownIDxx " +
+                "     LEFT JOIN Barangay k " +
+                "       ON  g.sBrgyIDx2  = k.sBrgyIDxx " +
+                "     WHERE sUserIDxx =  "+ SQLUtil.toSQL(fsValue) + "  ORDER BY dTransact DESC LIMIT 1) AS b " +
+                "      ON a.sUserIDxx = b.sUserIDxx     " +
+                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Picture WHERE sUserIDxx = "+ SQLUtil.toSQL(fsValue) + "  ORDER BY dTransact DESC LIMIT 1) c " +
+                "    ON a.sUserIDxx = c.sUserIDxx     " +
+                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Master_ID WHERE sUserIDxx = "+ SQLUtil.toSQL(fsValue) + "  ORDER BY dTransact DESC LIMIT 1) d " +
+                "    ON a.sUserIDxx = d.sUserIDxx     " +
+                "  LEFT JOIN (SELECT sUserIDxx,cVerified FROM App_User_Email WHERE sUserIDxx = "+ SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) e " +
+                "    ON a.sUserIDxx = e.sUserIDxx     " +
+                "  LEFT JOIN (SELECT sUserIDxx,sMobileNo,cVerified FROM App_User_Mobile WHERE sUserIDxx = "+ SQLUtil.toSQL(fsValue) + " ORDER BY dTransact DESC LIMIT 1) f " +
+                "    ON a.sUserIDxx = f.sUserIDxx     " +
+                "WHERE a.sProdctID = 'GuanzonApp' " +
                 "  AND a.sUserIDxx = " + SQLUtil.toSQL(fsValue);
         return lsSQL;
     }
@@ -384,20 +435,28 @@ public class ClientProfiling {
            
         
         lsSQL = "SELECT " +
-                    "  IFNULL(sUserIDxx, '') sUserIDxx " +
-                    ", IFNULL(dTransact, '') dTransact " +
-                    ", IFNULL(sIDCodex1, '') sIDCodex1 " +
-                    ", IFNULL(sIDNoxxx1, '') sIDNoxxx1 " +
-                    ", IFNULL(sIDFrntx1, '') sIDFrntx1 " +
-                    ", IFNULL(sIDBackx1, '') sIDBackx1 " +
-                    ", IFNULL(sIDCodex2, '') sIDCodex2 " +
-                    ", IFNULL(sIDNoxxx2, '') sIDNoxxx2 " +
-                    ", IFNULL(sIDFrntx2, '') sIDFrntx2 " +
-                    ", IFNULL(sIDBackx2, '') sIDBackx2 " +
-                    ", IFNULL(cVerified, '0') cVerified " +
-                    ", IFNULL(dVerified, '') dVerified " +
-                    ", IFNULL(sVerified, '') sVerified " + 
-                " FROM " + MASTER_ID_TABLE + 
+                    "  IFNULL(a.sUserIDxx, '') sUserIDxx " +
+                    ", IFNULL(a.dTransact, '') dTransact " +
+                    ", IFNULL(a.sIDCodex1, '') sIDCodex1 " +
+                    ", IFNULL(a.sIDNoxxx1, '') sIDNoxxx1 " +
+                    ", IFNULL(a.sIDFrntx1, '') sIDFrntx1 " +
+                    ", IFNULL(a.sIDBackx1, '') sIDBackx1 " +
+                    ", IFNULL(a.dIDExpry1, '') dIDExpry1 " +
+                    ", IFNULL(a.sIDCodex2, '') sIDCodex2 " +
+                    ", IFNULL(a.sIDNoxxx2, '') sIDNoxxx2 " +
+                    ", IFNULL(a.sIDFrntx2, '') sIDFrntx2 " +
+                    ", IFNULL(a.sIDBackx2, '') sIDBackx2 " +
+                    ", IFNULL(a.dIDExpry2, '') dIDExpry2 " +
+                    ", IFNULL(a.cVerified, '0') cVerified " +
+                    ", IFNULL(a.dVerified, '') dVerified " +
+                    ", IFNULL(a.sVerified, '') sVerified " + 
+                    ", IFNULL(b.sIDNamexx, '') sIDNamex1 " +
+                    ", IFNULL(c.sIDNamexx, '') sIDNamex2 " + 
+                " FROM " + MASTER_ID_TABLE + " a " +
+                "   LEFT JOIN Identification b " +
+                "       ON a.sIDCodex1 = b.sIDCodexx " +
+                "   LEFT JOIN Identification c " +
+                "       ON a.sIDCodex2 = c.sIDCodexx " +
                 " WHERE ";
         return lsSQL;
     }
@@ -549,7 +608,7 @@ public class ClientProfiling {
         switch (fnIndex){
             case 2: //dTransact
             case 10: //dBirthDte
-            case 20: //dVerified
+            case 22: //dVerified
                 if (foValue instanceof Date){
                     p_oProfile.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
                 } else
@@ -568,12 +627,19 @@ public class ClientProfiling {
             case 11: //sBirthPlc
             case 12: //sHouseNo1
             case 13: //sAddress1
-            case 14: //sTownIDx1
-            case 15: //sClientID
+            case 14: //sBrgyIDx1
+            case 15: //sTownIDx1
             case 16: //sHouseNo2
             case 17: //sAddress2
-            case 18: //sTownIDx2
-            case 21: //sVerified
+            case 18: //sBrgyIDx2
+            case 19: //sTownIDx2
+            case 20: //sClientID
+            case 23: //sVerified
+            case 24: //sTownNme1 
+            case 25: //sTownNme2 
+            case 26: //sBrgyNme1 
+            case 27: //sBrgyNme2 
+            case 28: //strBrhPlc 
                 p_oProfile.updateString(fnIndex, (String) foValue);
                 p_oProfile.updateRow();
 
@@ -581,7 +647,7 @@ public class ClientProfiling {
                 break;
             case 8: //cGenderCd
             case 9: //cCvilStat
-            case 19: //cVerified
+            case 21: //cVerified
                 if (foValue instanceof Integer)
                     p_oProfile.updateInt(fnIndex, (int) foValue);
                 else 
@@ -611,28 +677,45 @@ public class ClientProfiling {
             lsCondition = " cVerified = " + SQLUtil.toSQL(lsStat);
            
         lsSQL = "SELECT " +
-                    "  IFNULL(sUserIDxx, '') sUserIDxx " +
-                    ", IFNULL(dTransact, '') dTransact " +
-                    ", IFNULL(sLastName, '') sLastName " +
-                    ", IFNULL(sFrstName, '') sFrstName " +
-                    ", IFNULL(sMiddName, '') sMiddName " +
-                    ", IFNULL(sMaidenNm, '') sMaidenNm " +
-                    ", IFNULL(sSuffixNm, '') sSuffixNm " +
-                    ", IFNULL(cGenderCd, '0') cGenderCd " +
-                    ", IFNULL(cCvilStat, '0') cCvilStat " +
-                    ", IFNULL(dBirthDte,'') dBirthDte " +
-                    ", IFNULL(sBirthPlc, '') sBirthPlc " +
-                    ", IFNULL(sHouseNo1, '') sHouseNo1 " +
-                    ", IFNULL(sAddress1, '') sAddress1 " +
-                    ", IFNULL(sTownIDx1, '') sTownIDx1 " +
-                    ", IFNULL(sClientID, '') sClientID " +
-                    ", IFNULL(sHouseNo2, '') sHouseNo2 " +
-                    ", IFNULL(sAddress2, '') sAddress2 " +
-                    ", IFNULL(sTownIDx2, '') sTownIDx2 " +
-                    ", IFNULL(cVerified, '0') cVerified " +
-                    ", IFNULL(dVerified, '') dVerified " +
-                    ", IFNULL(sVerified, '') sVerified " + 
-                " FROM " + USER_PROFILE_TABLE  + 
+                    "  IFNULL(a.sUserIDxx, '') sUserIDxx " +
+                    ", IFNULL(a.dTransact, '') dTransact " +
+                    ", IFNULL(a.sLastName, '') sLastName " +
+                    ", IFNULL(a.sFrstName, '') sFrstName " +
+                    ", IFNULL(a.sMiddName, '') sMiddName " +
+                    ", IFNULL(a.sMaidenNm, '') sMaidenNm " +
+                    ", IFNULL(a.sSuffixNm, '') sSuffixNm " +
+                    ", IFNULL(a.cGenderCd, '0') cGenderCd " +
+                    ", IFNULL(a.cCvilStat, '0') cCvilStat " +
+                    ", IFNULL(a.dBirthDte,'') dBirthDte " +
+                    ", IFNULL(a.sBirthPlc, '') sBirthPlc " +
+                    ", IFNULL(a.sHouseNo1, '') sHouseNo1 " +
+                    ", IFNULL(a.sAddress1, '') sAddress1 " +
+                    ", IFNULL(a.sBrgyIDx1, '') sBrgyIDx1 " +
+                    ", IFNULL(a.sTownIDx1, '') sTownIDx1 " +
+                    ", IFNULL(a.sClientID, '') sClientID " +
+                    ", IFNULL(a.sHouseNo2, '') sHouseNo2 " +
+                    ", IFNULL(a.sAddress2, '') sAddress2 " +
+                    ", IFNULL(a.sBrgyIDx2, '') sBrgyIDx2 " +
+                    ", IFNULL(a.sTownIDx2, '') sTownIDx2 " +
+                    ", IFNULL(a.cVerified, '0') cVerified " +
+                    ", IFNULL(a.dVerified, '') dVerified " +
+                    ", IFNULL(a.sVerified, '') sVerified " + 
+                    ", IFNULL(e.sBrgyName, '') sBrgyNme1 " +
+                    ", IFNULL(b.sTownName, '') sTownNme1 " +
+                    ", IFNULL(f.sBrgyName, '') sBrgyNme2 " +
+                    ", IFNULL(c.sTownName, '') sTownNme2 " +
+                    ", IFNULL(d.sTownName, '') strBrhPlc " +
+                " FROM " + USER_PROFILE_TABLE  + " a "+
+                "   LEFT JOIN TownCity b " + 
+                "     ON a.sTownIDx1 = b.sTownIDxx " + 
+                "   LEFT JOIN TownCity c " + 
+                "     ON a.sTownIDx2 = c.sTownIDxx " + 
+                "   LEFT JOIN TownCity d " + 
+                "     ON a.sBirthPlc = d.sTownIDxx " + 
+                "   LEFT JOIN Barangay e " + 
+                "     ON a.sBrgyIDx1 = e.sBrgyIDxx " + 
+                "   LEFT JOIN Barangay f " + 
+                "     ON a.sBrgyIDx2 = f.sBrgyIDxx " + 
                 " WHERE ";
         return lsSQL;
     }
@@ -841,25 +924,25 @@ public class ClientProfiling {
                 
     }
     
-//    public boolean OpenRecord(String fsValue) throws SQLException{
-//        p_nEditMode = EditMode.UNKNOWN;
-//        
-//        if (p_oApp == null){
-//            p_sMessage = "Application driver is not set.";
-//            return false;
-//        }
-//        
-//        p_sMessage = "";
-//        
-//        loadMasterID(fsValue);
-//        loadUserPicture(fsValue);
-//        loadUserProfile(fsValue);
-//        loadUserEmail(fsValue);
-//        loadUserMobile(fsValue);
-//        p_nEditMode = EditMode.READY;
-//        
-//        return true;
-//    }
+    public boolean OpenRecord(String fsValue) throws SQLException{
+        p_nEditMode = EditMode.UNKNOWN;
+        
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        loadMasterID(fsValue);
+        loadUserPicture(fsValue);
+        loadUserProfile(fsValue);
+        loadUserEmail(fsValue);
+        loadUserMobile(fsValue);
+        p_nEditMode = EditMode.READY;
+        
+        return true;
+    }
     
     public boolean isVerefied() throws SQLException{
         return isIDVerefied() &&
@@ -898,8 +981,179 @@ public class ClientProfiling {
         }
         return "1".equals(getUserMobileNo("cVerified"));
     }
+    private String getSQ_Town(){
+        String lsSQL = "";
+        
+        lsSQL = "SELECT " +
+                    "  IFNULL(sTownIDxx, '') sTownIDxx " +
+                    ", IFNULL(sTownName, '') sTownName " +
+                    
+                " FROM TownCity " +
+                " WHERE ";
+        return lsSQL;
+    }
+    public boolean SearchTown(int index,String fsValue, boolean fbByCode) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";    
+        
+        String lsSQL = "";
+        if (fbByCode)
+            lsSQL = getSQ_Town() + " sTownIDxx = " + SQLUtil.toSQL(fsValue);   
+        else {
+            lsSQL = getSQ_Town() + " sTownName LIKE " + SQLUtil.toSQL(fsValue + "%"); 
+        }
+        if (p_bWithUI){
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                p_oApp, 
+                                lsSQL, 
+                                fsValue, 
+                                "Town ID.»TownName", 
+                                "sTownIDxx»sTownName", 
+                                "sTownIDxx»sTownName", 
+                                fbByCode ? 0 : 1);
+            
+            if (loJSON != null){
+                if(index == 1){
+                    setUserProfile("sTownIDx1", (String) loJSON.get("sTownIDxx"));
+                    setUserProfile("sTownNme1", (String) loJSON.get("sTownName"));
+                    if (p_oListener != null) p_oListener.MasterRetreive(24, (String) loJSON.get("sTownName"));
+                }else{
+                    setUserProfile("sTownIDx2", (String) loJSON.get("sTownIDxx"));
+                    setUserProfile("sTownNme2", (String) loJSON.get("sTownName"));
+                    if (p_oListener != null) p_oListener.MasterRetreive(25, (String) loJSON.get("sTownName"));
+                }
+               
+                
+                return true;
+            }
+                
+            else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+        
+       
+//        
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        if (!loRS.next()){
+            MiscUtil.close(loRS);
+            p_sMessage = "No transaction found for the givern criteria.";
+            return false;
+        }
+        
+        lsSQL = loRS.getString("sTownIDxx");
+        if(index == 1){
+            setUserProfile("sTownIDx1", (String) loRS.getString("sTownIDxx"));
+            setUserProfile("sTownNme1", (String) loRS.getString("sTownName"));
+        }else{
+            setUserProfile("sTownIDx2", (String) loRS.getString("sTownIDxx"));
+            setUserProfile("sTownNme2", (String) loRS.getString("sTownName"));
+        }
+        MiscUtil.close(loRS);
+//        
+        return true;
+    }
+    private String getSQ_Barangay(){
+        String lsSQL = "";
+        
+        lsSQL = "SELECT " +
+                    "  IFNULL(a.sBrgyIDxx, '') sBrgyIDxx " +
+                    ", IFNULL(a.sBrgyName, '') sBrgyName " +
+                    ", IFNULL(b.sTownIDxx, '') sTownIDxx " +
+                    ", IFNULL(b.sTownName, '') sTownName " +
+                    
+                " FROM Barangay a " +
+                "   LEFT JOIN TownCity b " +
+                "     ON a.sTownIDxx = b.sTownIDxx " +
+                " WHERE ";
+        return lsSQL;
+    }
+        
+    public boolean SearchBarangay(int index,String fsValue, boolean fbByCode) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";    
+        
+        String lsSQL = "";
+        if (fbByCode)
+            lsSQL = getSQ_Barangay() + " sBrgyIDxx = " + SQLUtil.toSQL(fsValue);   
+        else {
+            lsSQL = getSQ_Barangay()+ " sBrgyName LIKE " + SQLUtil.toSQL(fsValue + "%"); 
+        }
+        if (p_bWithUI){
+            JSONObject loJSON = showFXDialog.jsonSearch(
+                                p_oApp, 
+                                lsSQL, 
+                                fsValue, 
+                                "Brgy ID.»Brgy Name» Town Name", 
+                                "sBrgyIDxx»sBrgyName»sTownName", 
+                                "sBrgyIDxx»sBrgyName»sTownName", 
+                                fbByCode ? 0 : 1);
+            
+            if (loJSON != null){
+                if(index == 1){
+                    setUserProfile("sBrgyIDx1", (String) loJSON.get("sBrgyIDxx"));
+                    setUserProfile("sBrgyNme1", (String) loJSON.get("sBrgyName")); 
+                    setUserProfile("sTownIDx1", (String) loJSON.get("sTownIDxx"));
+                    setUserProfile("sTownNme1", (String) loJSON.get("sTownName"));
+                    if (p_oTownListener != null) {
+                        p_oTownListener.MasterTownRetreive(24, (String) loJSON.get("sTownName"));
+                        p_oTownListener.MasterTownRetreive(25, (String) loJSON.get("sBrgyName"));
+                    }
+                }else{
+                    setUserProfile("sBrgyIDx2", (String) loJSON.get("sBrgyIDxx"));
+                    setUserProfile("sBrgyNme2", (String) loJSON.get("sBrgyName"));
+                    setUserProfile("sTownIDx2", (String) loJSON.get("sTownIDxx"));
+                    setUserProfile("sTownNme2", (String) loJSON.get("sTownName"));
+                    if (p_oTownListener != null) {
+                        p_oTownListener.MasterTownRetreive(26, (String) loJSON.get("sTownName"));
+                        p_oTownListener.MasterTownRetreive(27, (String) loJSON.get("sBrgyName"));
+                    }
+//                    if (p_oListener != null) p_oListener.MasterRetreive(27, (String) loJSON.get("sBrgyName"));
+                }
+               
+                
+                return true;
+            }
+                
+            else {
+                p_sMessage = "No record selected.";
+                return false;
+            }
+        }
+        
+       
+//        
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        if (!loRS.next()){
+            MiscUtil.close(loRS);
+            p_sMessage = "No transaction found for the givern criteria.";
+            return false;
+        }
+        
+        lsSQL = loRS.getString("sTownIDxx");
+        if(index == 1){
+            setUserProfile("sTownIDx1", (String) loRS.getString("sTownIDxx"));
+            setUserProfile("sTownNme1", (String) loRS.getString("sTownName"));
+        }else{
+            setUserProfile("sTownIDx2", (String) loRS.getString("sTownIDxx"));
+            setUserProfile("sTownNme2", (String) loRS.getString("sTownName"));
+        }
+        MiscUtil.close(loRS);
+//        
+        return true;
+    }
     public boolean loadMasterID(String fsValue) throws SQLException{
-        p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -912,7 +1166,7 @@ public class ClientProfiling {
         ResultSet loRS;
         //open master
         
-        lsSQL = getSQ_MasterID() + " sUserIDxx = " + SQLUtil.toSQL(fsValue) +  " ORDER BY dTransact DESC LIMIT 1" ;
+        lsSQL = getSQ_MasterID() + " a.sUserIDxx = " + SQLUtil.toSQL(fsValue) +  " ORDER BY dTransact DESC LIMIT 1" ;
         loRS = p_oApp.executeQuery(lsSQL);
         RowSetFactory factory = RowSetProvider.newFactory();
         p_oMasterID = factory.createCachedRowSet();
@@ -924,18 +1178,9 @@ public class ClientProfiling {
             p_sMessage = "No record was loaded.";
             return false;
         }
-        
-
-        
-        
-        
-        
-        p_nEditMode = EditMode.READY;
-        
         return true;
     }
     public boolean loadUserPicture(String fsValue) throws SQLException{
-        p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -962,14 +1207,11 @@ public class ClientProfiling {
             p_sMessage = "No record was loaded.";
             return false;
         }
-        p_nEditMode = EditMode.READY;
         
         return true;
     }
 
     public boolean loadUserProfile(String fsValue) throws SQLException{
-         p_nEditMode = EditMode.UNKNOWN;
-        
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
             return false;
@@ -995,13 +1237,59 @@ public class ClientProfiling {
             p_sMessage = "No record was loaded.";
             return false;
         }
-        p_nEditMode = EditMode.READY;
         
         return true;
     }
-
+//    public boolean SearchRecord(String fsValue, boolean fbByCode) throws SQLException{
+//        if (p_oApp == null){
+//            p_sMessage = "Application driver is not set.";
+//            return false;
+//        }
+//        
+//        p_sMessage = "";
+//        
+//        String lsSQL = getSQ_Record();
+//        
+//        if (p_bWithUI){
+//            JSONObject loJSON = showFXDialog.jsonSearch(
+//                                p_oApp, 
+//                                lsSQL, 
+//                                fsValue, 
+//                                "ID Code»ID Name", 
+//                                "sIDCodexx»sIDNamexx", 
+//                                "sIDCodexx»sIDNamexx", 
+//                                fbByCode ? 0 : 1);
+//            
+//            if (loJSON != null) 
+//                return OpenRecord((String) loJSON.get("sIDCodexx"));
+//            else {
+//                p_sMessage = "No record selected.";
+//                return false;
+//            }
+//        }
+//        
+//        if (fbByCode)
+//            lsSQL = MiscUtil.addCondition(lsSQL, "sIDCodexx = " + SQLUtil.toSQL(fsValue));   
+//        else {
+//            lsSQL = MiscUtil.addCondition(lsSQL, "sIDNamexx LIKE " + SQLUtil.toSQL(fsValue + "%")); 
+//            lsSQL += " LIMIT 1";
+//        }
+//        
+//        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+//        
+//        if (!loRS.next()){
+//            MiscUtil.close(loRS);
+//            p_sMessage = "No transaction found for the givern criteria.";
+//            return false;
+//        }
+//        
+//        lsSQL = loRS.getString("sIDCodexx");
+//        MiscUtil.close(loRS);
+//        
+//        return OpenRecord(lsSQL);
+//    }
+    
     public boolean loadUserEmail(String fsValue) throws SQLException{
-        p_nEditMode = EditMode.UNKNOWN;
         
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -1028,14 +1316,11 @@ public class ClientProfiling {
             p_sMessage = "No record was loaded.";
             return false;
         }
-        p_nEditMode = EditMode.READY;
         
         return true;
     }
 
     public boolean loadUserMobile(String fsValue) throws SQLException{
-         p_nEditMode = EditMode.UNKNOWN;
-        
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
             return false;
@@ -1061,7 +1346,6 @@ public class ClientProfiling {
             p_sMessage = "No record was loaded.";
             return false;
         }
-        p_nEditMode = EditMode.READY;
         
         return true;
     }
@@ -1081,6 +1365,7 @@ public class ClientProfiling {
             return false;
         } 
         String lsUserID = (String) getMasterID("sUserIDxx");
+        p_oMasterID.updateObject("cVerified", "1");
         p_oMasterID.updateObject("sVerified", p_oApp.getUserID());
         p_oMasterID.updateObject("dVerified", p_oApp.getServerDate());
 
@@ -1100,7 +1385,7 @@ public class ClientProfiling {
             }
             if (!p_bWithParent) p_oApp.commitTrans();
 
-            p_nEditMode = EditMode.UNKNOWN;
+            p_nEditMode = EditMode.READY;
             return true;
         } else{
             p_sMessage = "No record to save.";
@@ -1123,6 +1408,7 @@ public class ClientProfiling {
         } 
         
         String lsUserID = (String) getUserPicture("sUserIDxx");
+        p_oPicture.updateObject("cVerified", "1");
         p_oPicture.updateObject("sVerified", p_oApp.getUserID());
         p_oPicture.updateObject("dVerified", p_oApp.getServerDate());
         p_oPicture.updateRow();
@@ -1142,7 +1428,7 @@ public class ClientProfiling {
             }
             if (!p_bWithParent) p_oApp.commitTrans();
 
-            p_nEditMode = EditMode.UNKNOWN;
+            p_nEditMode = EditMode.READY;
             return true;
         } else{
             p_sMessage = "No record to save.";
@@ -1163,7 +1449,52 @@ public class ClientProfiling {
             p_sMessage = "Invalid edit mode detected.";
             return false;
         } 
-        String lsUserID = (String) getUserPicture("sUserIDxx");
+//        String lsUserID = (String) getUserProfile("sUserIDxx");
+
+        lsSQL = MiscUtil.rowset2SQL(p_oProfile, 
+                                        USER_PROFILE_TABLE, 
+                                        "sBrgyNme1;sTownNme1;sBrgyNme2;sTownNme2", 
+                                        "sUserIDxx = " + SQLUtil.toSQL(p_oProfile.getString("sUserIDxx")));
+//        lsSQL = MiscUtil.rowset2SQL(p_oProfile, 
+//                                    USER_PROFILE_TABLE, 
+//                                    "", 
+//                                    "sUserIDxx = " + SQLUtil.toSQL(lsUserID));
+
+        if (!lsSQL.isEmpty()){
+            if (!p_bWithParent) p_oApp.beginTrans();
+            if (!lsSQL.isEmpty()){
+                if (p_oApp.executeQuery(lsSQL, USER_PROFILE_TABLE, p_sBranchCd, "") <= 0){
+                if (!p_bWithParent) p_oApp.rollbackTrans();
+                p_sMessage = p_oApp.getErrMsg() + ";" + p_oApp.getMessage();
+                p_nEditMode = EditMode.UPDATE;
+                return false;
+            }
+            }
+            if (!p_bWithParent) p_oApp.commitTrans();
+
+            p_nEditMode = EditMode.READY;
+            return true;
+        } else{
+            p_sMessage = "No record to save.";
+            return false;
+        }
+    }
+    public boolean VerifyUserProfile() throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";
+        
+        String lsSQL;
+//        if (p_nEditMode != EditMode.ADDNEW &&
+//            p_nEditMode != EditMode.UPDATE){
+//            p_sMessage = "Invalid edit mode detected.";
+//            return false;
+//        } 
+        String lsUserID = (String) getUserProfile("sUserIDxx");
+        p_oProfile.updateObject("cVerified", "1");
         p_oProfile.updateObject("sVerified", p_oApp.getUserID());
         p_oProfile.updateObject("dVerified", p_oApp.getServerDate());
         p_oProfile.updateRow();
@@ -1183,7 +1514,7 @@ public class ClientProfiling {
             }
             if (!p_bWithParent) p_oApp.commitTrans();
 
-            p_nEditMode = EditMode.UNKNOWN;
+//            p_nEditMode = EditMode.UNKNOWN;
             return true;
         } else{
             p_sMessage = "No record to save.";
@@ -1274,4 +1605,5 @@ public class ClientProfiling {
             return false;
         }
     }
+    
 }
