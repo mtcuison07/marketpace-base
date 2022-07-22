@@ -8,8 +8,6 @@ package org.rmj.marketplace.base;
  *
  * @author User
  */
-public interface LResult {
-    void MasterRetreive(int fnIndex, Object foValue);
-    void OnSave(String message);
-    void OnCancel(String message);
+public interface LResultTown {
+    void MasterTownRetreive(int fnIndex, Object foValue);
 }

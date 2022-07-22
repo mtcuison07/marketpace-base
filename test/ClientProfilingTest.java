@@ -12,6 +12,7 @@ import org.rmj.appdriver.GRider;
 import org.rmj.appdriver.MiscUtil;
 import org.rmj.marketplace.base.LTransaction;
 import org.rmj.marketplace.base.ClientProfiling;
+import org.rmj.marketplace.base.LResult;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ClientProfilingTest {
@@ -34,6 +35,8 @@ public class ClientProfilingTest {
             public void MasterRetreive(int fnIndex, Object foValue) {
                 System.out.println(fnIndex + "-->" + foValue);
             }
+
+           
 
         };
         

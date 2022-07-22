@@ -51,6 +51,11 @@ public class SalesOrderTest {
             public void OnCancel(String message) {
                 System.out.println("OnCancel --> " + message);
             }
+
+            @Override
+            public void MasterRetreive(int fnIndex, Object foValue) {
+                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+            }
         };
         trans = new SalesOrder(instance, instance.getBranchCode(), false);
         trans.setListener(listener);
