@@ -27,8 +27,8 @@ import org.rmj.appdriver.constants.EditMode;
  */
 public class Pickup {
     private final String MASTER_TABLE = "ECommerce_Pickup_Master";
-    private final String ORDER_TABLE = "sales_order_master";
-    private final String ODETAIL_TABLE = "sales_order_detail";
+    private final String ORDER_TABLE = "ECommerce_Order_Master";
+    private final String ODETAIL_TABLE = "ECommerce_Order_Detail";
     
     private final GRider p_oApp;
     private final boolean p_bWithParent;    
@@ -43,7 +43,6 @@ public class Pickup {
 
     private CachedRowSet p_oMaster;
     private CachedRowSet p_oDetail;
-    private CachedRowSet p_oOrder;
     private CachedRowSet p_oWaybill;
     private LTransaction p_oListener;
     private LResult p_oResult;
@@ -79,19 +78,7 @@ public class Pickup {
         return p_nEditMode;
     }
     
-    public boolean NewTransaction() throws SQLException{
-        if (p_oApp == null){
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
-        
-        p_sMessage = "";
-        
-        createMaster();
-
-        p_nEditMode = EditMode.ADDNEW;
-        return true;
-    }
+    
     private void createMaster() throws SQLException{
         RowSetMetaData meta = new RowSetMetaDataImpl();
 
@@ -144,71 +131,55 @@ public class Pickup {
         
         p_oMaster = new CachedRowSetImpl();
         p_oMaster.setMetaData(meta);
-        
-        p_oMaster.last();
-        p_oMaster.moveToInsertRow();
-        
-        MiscUtil.initRowSet(p_oMaster);       
-        
-        p_oMaster.updateObject("sBatchNox", MiscUtil.getNextCode(MASTER_TABLE, "sBatchNox", true, p_oApp.getConnection(), p_sBranchCd));
-        p_oMaster.updateObject("dPickedUp", p_oApp.getServerDate());
-        p_oMaster.updateObject("sRemarksx", "");
-        p_oMaster.updateObject("dTransact", p_oApp.getServerDate());
-        p_oMaster.updateObject("cTranStat", "2");
-        
-        p_oMaster.insertRow();
-        p_oMaster.moveToCurrentRow();
     }
-    public boolean LoadOrder(String fsTransNox) throws SQLException{
-        if (p_oApp == null){
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
+    
+    private void createWaybill() throws SQLException{
+        RowSetMetaData meta = new RowSetMetaDataImpl();
+
+        meta.setColumnCount(8);
+
+        meta.setColumnName(1, "sTransNox");
+        meta.setColumnLabel(1, "sTransNox");
+        meta.setColumnType(1, Types.VARCHAR);
+        meta.setColumnDisplaySize(1, 12);
+
+        meta.setColumnName(2, "sCompnyNm");
+        meta.setColumnLabel(2, "sCompnyNm");
+        meta.setColumnType(2, Types.VARCHAR);
         
-        p_sMessage = "";    
-        ResultSet loRS = p_oApp.executeQuery(getSQ_OrderMaster());
-        if (MiscUtil.RecordCount(loRS) == 0){
-            MiscUtil.close(loRS);
-            p_sMessage = "No record found for the given criteria.";
-            return false;
-        }
+        meta.setColumnName(3, "sOrderNox");
+        meta.setColumnLabel(3, "sOrderNox");
+        meta.setColumnType(3, Types.VARCHAR);
         
-        RowSetFactory factory = RowSetProvider.newFactory();
-        p_oOrder = factory.createCachedRowSet();
-        p_oOrder.populate(loRS);
-        MiscUtil.close(loRS);
+        meta.setColumnName(4, "sTrackrNo");
+        meta.setColumnLabel(4, "sTrackrNo");
+        meta.setColumnType(4, Types.VARCHAR);
         
-        return true;
+        meta.setColumnName(5, "sPackngDs");
+        meta.setColumnLabel(5, "sPackngDs");
+        meta.setColumnType(5, Types.VARCHAR);
+        
+        meta.setColumnName(6, "dTransact");
+        meta.setColumnLabel(6, "dTransact");
+        meta.setColumnType(6, Types.DATE);
+        
+        meta.setColumnName(7, "sBatchNox");
+        meta.setColumnLabel(7, "sBatchNox");
+        meta.setColumnType(7, Types.VARCHAR);
+        
+        meta.setColumnName(8, "xReferNox");
+        meta.setColumnLabel(8, "xReferNox");
+        meta.setColumnType(8, Types.VARCHAR);
+        
+        p_oWaybill = new CachedRowSetImpl();
+        p_oWaybill.setMetaData(meta);
     }
-    public boolean LoadOrderDetail(String fsTransNox, boolean fbByCode) throws SQLException{
-        if (p_oApp == null){
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
-        
-        p_sMessage = "";    
-        
-        String lsSQL = "";
-        lsSQL = getSQ_OrderDetail()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(fsTransNox);
        
-        ResultSet loRS = p_oApp.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) == 0){
-            MiscUtil.close(loRS);
-            p_sMessage = "No record found for the given criteria.";
-            return false;
-        }
-        
-        RowSetFactory factory = RowSetProvider.newFactory();
-        p_oOrder = factory.createCachedRowSet();
-        p_oOrder.populate(loRS);
-        MiscUtil.close(loRS);
-        
-        return true;
+    public int getItemCount() throws SQLException{
+        p_oMaster.last();
+        return p_oMaster.getRow();
     }
-    
-    
-    
-    public Object getMaster(int fnIndex) throws SQLException{
+     public Object getMaster(int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
         
         p_oMaster.first();
@@ -217,114 +188,6 @@ public class Pickup {
     
     public Object getMaster(String fsIndex) throws SQLException{
         return getMaster(getColumnIndex(p_oMaster, fsIndex));
-    }
-    
-    public void setMaster(int fnIndex, Object foValue) throws SQLException{
-        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
-            System.out.println("Invalid Edit Mode Detected.");
-            return;
-        }
-        
-        p_oMaster.first();
-        
-        switch (fnIndex){
-           
-            case 1: //sBatchNox
-            case 3: //sRemarksx
-            case 5: //sEntryByx
-            case 8: //sPickedBy
-                p_oMaster.updateString(fnIndex, (String) foValue);
-                p_oMaster.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
-                break;
-            case 4:
-            case 9:
-                if (foValue instanceof Integer)
-                    p_oMaster.updateInt(fnIndex, (int) foValue);
-                else 
-                    p_oMaster.updateInt(fnIndex, 0);
-                
-                p_oMaster.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
-                break;
-             case 2: //dTransact
-             case 6: //dEntryDte
-             case 7: //dPickedUp
-             case 10: //dModified
-                if (foValue instanceof Date){
-                    p_oMaster.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
-                } else
-                    p_oMaster.updateDate(fnIndex, SQLUtil.toDate(p_oApp.getServerDate()));
-                
-                p_oMaster.updateRow();
-                
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
-                break;
-        }
-    }
-     public void setMaster(String fsIndex, Object foValue) throws SQLException{
-        setMaster(getColumnIndex(p_oMaster, fsIndex), foValue);
-    }
-    
-    
-    
-    public void setOrder(int fnIndex, Object foValue) throws SQLException{
-        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
-            System.out.println("Invalid Edit Mode Detected.");
-            return;
-        }
-        
-        p_oOrder.first();
-        
-        switch (fnIndex){
-            case 2:
-                if (foValue instanceof Date){
-                    p_oOrder.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
-                } else
-                    p_oOrder.updateDate(fnIndex, SQLUtil.toDate(p_oApp.getServerDate()));
-                
-                p_oOrder.updateRow();
-                
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oOrder.getString(fnIndex));
-                break;
-            case 1: 
-            case 3:
-            case 11:
-                p_oOrder.updateString(fnIndex, (String) foValue);
-                p_oOrder.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oOrder.getString(fnIndex));
-                break;
-            case 4:
-            case 5:
-            case 6: 
-            case 7:
-            case 8:
-            case 9:
-                if (foValue instanceof Double)
-                    p_oOrder.updateDouble(fnIndex, (double) foValue);
-                else 
-                    p_oOrder.updateDouble(fnIndex, 0.000);
-                
-                
-                p_oOrder.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oOrder.getString(fnIndex));
-                break;
-            case 10:
-                if (foValue instanceof Integer)
-                    p_oOrder.updateInt(fnIndex, (int) foValue);
-                else 
-                    p_oOrder.updateInt(fnIndex, 0);
-                
-                p_oOrder.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oOrder.getString(fnIndex));
-                break;
-        }
-    }
-     public void setOrder(String fsIndex, Object foValue) throws SQLException{
-        setOrder(getColumnIndex(p_oOrder, fsIndex), foValue);
-    }
-    public String getMessage(){
-        return p_sMessage;
     }
     
     public Object getDetail(int fnRow, int fnIndex) throws SQLException{
@@ -338,211 +201,123 @@ public class Pickup {
         return getDetail(fnRow, getColumnIndex(p_oMaster, fsIndex));
     }
     
-    public int getItemCount() throws SQLException{
-        p_oMaster.last();
-        return p_oMaster.getRow();
-    }
-   
-      public Object getOrder(int fnRow, int fnIndex) throws SQLException{
-        if (fnIndex == 0) return null;
-        
-        p_oOrder.absolute(fnRow);
-        return p_oOrder.getObject(fnIndex);
-    }
-    
-    public Object getOrder(int fnRow, String fsIndex) throws SQLException{
-        return getOrder(fnRow, getColumnIndex(p_oOrder, fsIndex));
-    }
-    public int getOrderItemCount() throws SQLException{
-        p_oOrder.last();
-        return p_oOrder.getRow();
-    }
-    
-    public Object getOrderDetail(int fnRow, int fnIndex) throws SQLException{
-        if (fnIndex == 0) return null;
-        
-        p_oOrder.absolute(fnRow);
-        return p_oOrder.getObject(fnIndex);
-    }
-    
-    public Object getOrderDetail(int fnRow, String fsIndex) throws SQLException{
-        return getOrderDetail(fnRow, getColumnIndex(p_oOrder, fsIndex));
-    }
-    public int getDetailItemCount() throws SQLException{
-        p_oOrder.last();
-        return p_oOrder.getRow();
-    }
-    
-    
-    public Object getWaybill(int fnIndex) throws SQLException{
-        if (fnIndex == 0) return null;
-        
-        p_oWaybill.first();
-        return p_oWaybill.getObject(fnIndex);
-    }
-    
-    public Object getWaybill(String fsIndex) throws SQLException{
-        return getWaybill(getColumnIndex(p_oWaybill, fsIndex));
-    }
-    
-    public void setWaybill(int fnIndex, Object foValue) throws SQLException{
+    public void setMaster(int fnIndex, Object foValue) throws SQLException{
         if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
             System.out.println("Invalid Edit Mode Detected.");
             return;
         }
         
-        p_oWaybill.first();
+        p_oMaster.first();
         
         switch (fnIndex){
-           
-            case 1: //sBatchNox
-            case 3: //sRemarksx
-            case 5: //sEntryByx
-            case 8: //sPickedBy
-                p_oWaybill.updateString(fnIndex, (String) foValue);
-                p_oWaybill.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
-                break;
+            case 2:
             case 4:
-            case 9:
-                if (foValue instanceof Integer)
-                    p_oWaybill.updateInt(fnIndex, (int) foValue);
-                else 
-                    p_oWaybill.updateInt(fnIndex, 0);
-                
-                p_oWaybill.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
-                break;
-             case 2: //dTransact
-             case 6: //dEntryDte
-             case 7: //dPickedUp
-             case 10: //dModified
                 if (foValue instanceof Date){
-                    p_oWaybill.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
+                    p_oMaster.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
                 } else
-                    p_oWaybill.updateDate(fnIndex, SQLUtil.toDate(p_oApp.getServerDate()));
+                    p_oMaster.updateDate(fnIndex, SQLUtil.toDate(p_oApp.getServerDate()));
                 
-                p_oWaybill.updateRow();
+                p_oMaster.updateRow();
                 
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
                 break;
+            case 1: 
+            case 3:
+            case 5:
+                p_oMaster.updateString(fnIndex, (String) foValue);
+                p_oMaster.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
+                break;
+            
+            case 6: 
+            
+                if (foValue instanceof Double)
+                    p_oMaster.updateDouble(fnIndex, (double) foValue);
+                else 
+                    p_oMaster.updateDouble(fnIndex, 0.000);
+                
+                
+                p_oMaster.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
+                break;
+          
         }
     }
-     public void setWaybill(String fsIndex, Object foValue) throws SQLException{
-        setWaybill(getColumnIndex(p_oWaybill, fsIndex), foValue);
+     public void setMaster(String fsIndex, Object foValue) throws SQLException{
+        setMaster(getColumnIndex(p_oMaster, fsIndex), foValue);
     }
-    
-    public int getWaybillItemCount() throws SQLException{
-        if (p_oWaybill == null) return 0;
-        
+    public int getItemCountWaybill() throws SQLException{
         p_oWaybill.last();
         return p_oWaybill.getRow();
     }
+    public Object getWaybill(int fnRow, String fnIndex) throws SQLException{
+        return getWaybill(fnRow,getColumnIndex(p_oWaybill, fnIndex));
+    }
     
     public Object getWaybill(int fnRow, int fnIndex) throws SQLException{
-        if (getWaybillItemCount()  == 0) return null;
+        if (fnIndex == 0) return null;
         
-        if (getWaybillItemCount() == 0 || fnRow > getWaybillItemCount()) return null;   
-       
         p_oWaybill.absolute(fnRow);
         return p_oWaybill.getObject(fnIndex);
-        
     }
     
-    public Object getWaybill(int fnRow, String fsIndex) throws SQLException{
-        return getWaybill(fnRow, getColumnIndex(p_oWaybill, fsIndex));
-    }
     
-    public void setWaybill(int fnRow, String fsIndex, Object foValue) throws SQLException{
-        setWaybill(fnRow, getColumnIndex(p_oWaybill, fsIndex), foValue);
+    public String getMessage(){
+        return p_sMessage;
     }
-    
-    public void setWaybill(int fnRow, int fnIndex, Object foValue) throws SQLException{
-        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
-            System.out.println("Invalid Edit Mode Detected.");
-            return;
-        }
-        //p_oWaybill.first();
-        p_oWaybill.absolute(fnRow);
-        
-        switch (fnIndex){
-            case 6: //sRemarksx
-                p_oWaybill.updateString(fnIndex, (String) foValue);
-                p_oWaybill.updateRow();
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
-                break;
-            case 9:
-                if (foValue instanceof Integer){
-                    p_oWaybill.updateInt(fnIndex, (int) foValue);
-                    p_oWaybill.updateRow();
-                }                
-                
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
-                break;
-            case 10:
-                if (foValue instanceof Date){
-                    p_oWaybill.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
-                } else
-                    p_oWaybill.updateDate(fnIndex, SQLUtil.toDate(p_oApp.getServerDate()));
-                
-                p_oWaybill.updateRow();
-                
-                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oWaybill.getString(fnIndex));
-                break;
-        }
-    }
-    public void displayMasFields() throws SQLException{
-        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) return;
-        
-        int lnRow = p_oMaster.getMetaData().getColumnCount();
-        
-        System.out.println("----------------------------------------");
-        System.out.println("MASTER TABLE INFO");
-        System.out.println("----------------------------------------");
-        System.out.println("Total number of columns: " + lnRow);
-        System.out.println("----------------------------------------");
-        
-        for (int lnCtr = 1; lnCtr <= lnRow; lnCtr++){
-            System.out.println("Column index: " + (lnCtr) + " --> Label: " + p_oMaster.getMetaData().getColumnLabel(lnCtr));
-            System.out.println("Column type: " + (lnCtr) + " --> " + p_oMaster.getMetaData().getColumnType(lnCtr));
-            if (p_oMaster.getMetaData().getColumnType(lnCtr) == Types.CHAR ||
-                p_oMaster.getMetaData().getColumnType(lnCtr) == Types.VARCHAR){
-                
-                System.out.println("Column index: " + (lnCtr) + " --> Size: " + p_oMaster.getMetaData().getColumnDisplaySize(lnCtr));
-            }
-        }
-        
-        System.out.println("----------------------------------------");
-        System.out.println("END: MASTER TABLE INFO");
-        System.out.println("----------------------------------------");
-    } 
-    
-    private boolean loadWaybill(String fsValue) throws SQLException{
+    public boolean LoadList() throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
             return false;
         }
         
         p_sMessage = "";    
-        System.out.println();
-        String lsSQL = getSQ_Detail() + " AND b.sTransNox = " + SQLUtil.toSQL(fsValue);
-        ResultSet loRS = p_oApp.executeQuery(lsSQL);
-        
-        RowSetFactory factory = RowSetProvider.newFactory();
-        p_oWaybill = factory.createCachedRowSet();
-        
+        ResultSet loRS = p_oApp.executeQuery(getSQ_Master());
         if (MiscUtil.RecordCount(loRS) == 0){
             MiscUtil.close(loRS);
             p_sMessage = "No record found for the given criteria.";
             return false;
         }
         
-        p_oWaybill.populate(loRS);
+        RowSetFactory factory = RowSetProvider.newFactory();
+        p_oMaster = factory.createCachedRowSet();
+        p_oMaster.populate(loRS);
         MiscUtil.close(loRS);
+        
         return true;
     }
-    public String getSQ_OrderMaster(){
-        String lsSQL = "";
+    public boolean OpenTransaction(String fsTransNox) throws SQLException{
+        p_nEditMode = EditMode.UNKNOWN;
+        
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+//        createWaybill();
+        p_sMessage = "";
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+        
+        lsSQL = getSQ_Waybill()+ " AND b.sBatchNox = " + SQLUtil.toSQL(fsTransNox);
+        loRS = p_oApp.executeQuery(lsSQL);
+        if (MiscUtil.RecordCount(loRS) == 0){
+            MiscUtil.close(loRS);
+            p_sMessage = "No record found for the given criteria.";
+            return false;
+        }
+        
+        p_oWaybill = factory.createCachedRowSet();
+        p_oWaybill.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        p_nEditMode = EditMode.READY;
+        
+        return true;
+    }
+     public String getSQ_Master(){
+         String lsSQL = "";
         
         String lsCondition = "";
         String lsStat = String.valueOf(p_nTranStat);
@@ -551,104 +326,45 @@ public class Pickup {
             for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
                 lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
             }
-            lsCondition = "a.cTranStat IN (" + lsSQL.substring(2) + ")";
+            lsCondition = "cTranStat IN (" + lsSQL.substring(2) + ")";
         } else 
-            lsCondition = "a.cTranStat = " + SQLUtil.toSQL(lsStat);
+            lsCondition = "cTranStat = " + SQLUtil.toSQL(lsStat);
+          
+        lsSQL = "SELECT" +
+                  " IFNULL(sBatchNox,'') sBatchNox" +
+                  ", IFNULL(dTransact,'') dTransact" +
+                  ", IFNULL(sRemarksx,'') sRemarksx" +
+                  ", IFNULL(dPickedUp,'') dPickedUp" +
+                  ", IFNULL(sPickedBy,'') sPickedBy" +
+                  ", IFNULL(cTranStat,0) cTranStat" +
+               " FROM ECommerce_Pickup_Master " + 
+               " WHERE " + lsCondition;
                
-        lsSQL = "SELECT " +
-                "  a.sTransNox," +
-                "  a.dTransact, " +
-                "  a.sTermCode," +
-                "  a.nTranTotl," +
-                "  a.nVATRatex," +
-                "  a.nDiscount," +
-                "  a.nAddDiscx," +
-                "  a.nFreightx," +
-                "  a.nAmtPaidx," +
-                "  a.cTranStat," +
-                "  a.sRemarksx," +
-                "  CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sCompnyNm," +
-                "  b.sAddressx," +
-                "  c.sTownName," +
-                "  b.sMobileNo," +
-                "  b.sEmailAdd  " +
-                "  FROM " + ORDER_TABLE +" a " +
-                "LEFT JOIN Client_Master b " +
-                "	ON a.sClientID = b.sClientID " +
-                "LEFT JOIN TownCity c " + 
-                "ON b.sTownIDxx = c.sTownIDxx " + 
-                " WHERE " + lsCondition ;
         return lsSQL;
     }
-    public String getSQ_Master(){
+     public String getSQ_Waybill(){
         String lsSQL = "";
           
         lsSQL = "SELECT" +
-                  " sBatchNox" +
-                  ", dTransact" +
-                  ", sRemarksx" +
-                  ", dPickedUp" +
-                  ", sPickedBy" +
-                  ", cTranStat" +
-               " FROM ECommerce_Pickup_Master a" +
-                  " LEFT JOIN Ecommerce_Packaging b" +
-                     " ON a.sPackngCD = b.sPackngCD ";
-               
-        return lsSQL;
-    }
-    
-    public String getSQ_Detail(){
-        String lsSQL = "";
-        
-        lsSQL = "SELECT" +
-               "  a.sTransNox" +
-               ",  CONCAT(c.sFrstName, ' ', c.sMiddName,' ', c.sLastName) AS sCompnyNm" +
-               ", d.sPackngDs" +
-               ", b.dTransact" +
-               ", b.sTransNox xReferNox" +
+            "  IFNULL(a.sTransNox, '') sTransNox " +
+            ", IFNULL(c.sCompnyNm, '') sCompnyNm " +
+            ", IFNULL(b.sOrderNox, '') sOrderNox " +
+            ", IFNULL(a.sTrackrNo, '') sTrackrNo " +
+            ", IFNULL(d.sPackngDs, '') sPackngDs " +
+            ", IFNULL(b.dTransact, '') dTransact " +
+            ", IFNULL(b.sBatchNox, '') sBatchNox " +
+            ", IFNULL(b.sTransNox, '') xReferNox " +
             " FROM ECommerce_Order_Waybill a" +
-               ", sales_order_master b" +
-               ", Client_Master c" +
-               ", ECommerce_Packaging d" +
-            " WHERE a.sTransNox = b.sTransNox" +
-               " AND b.sClientID = c.sClientID" +
-               " AND a.sPackngCD = d.sPackngCD" +
-               " AND b.cTranStat = '3'";
+            ", ECommerce_Order_Master b" +
+            ", Client_Master c" +
+            ", ECommerce_Packaging d" +
+         " WHERE a.sTransNox = b.sWaybilNo" +
+            " AND b.sClientID = c.sClientID" +
+            " AND a.sPackngCD = d.sPackngCD"  ;
                
         return lsSQL;
     }
-    
-    public String getSQ_OrderDetail(){
-        String lsSQL = "";
-        lsSQL = "SELECT " +
-                    "  a.sTransNox, " +
-                    "  d.sBarrcode xBarCodex, " +
-                    "  d.sDescript xDescript, " +
-                    "  IFNULL(e.sBrandNme, '') xBrandNme, " +
-                    "  IFNULL(f.sModelNme, '') xModelNme, " +
-                    "  IFNULL(g.sColorNme, '') xColorNme, " +
-                    "  a.nEntryNox, " +
-                    "  a.nQuantity, " +
-                    "  a.nUnitPrce, " +
-                    "  a.sReferNox, " +
-                    "  a.nIssuedxx " +
-                    "FROM "+ODETAIL_TABLE+" a " +
-                    "LEFT JOIN mp_inv_master b " +
-                    "	ON a.sStockIDx = b.sListngID " +
-                    "LEFT JOIN inv_category c " +
-                    "	ON b.sCategrID = c.sCategrID " +
-                    "LEFT JOIN  CP_Inventory d " +
-                    "	ON d.sStockIDx = a.sStockIDx " +
-                    "LEFT JOIN CP_Brand e " +
-                    "	ON d.sBrandIDx = e.sBrandIDx " +
-                    "LEFT JOIN CP_Model f " +
-                    "	ON d.sModelIDx = f.sModelIDx " +
-                    "LEFT JOIN color g " +
-                    "	ON d.sColorIDx = g.sColorIDx";
-        return lsSQL;
-    }
-    
-    private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
+     private int getColumnIndex(CachedRowSet loRS, String fsValue) throws SQLException{
         int lnIndex = 0;
         int lnRow = loRS.getMetaData().getColumnCount();
         
@@ -661,173 +377,4 @@ public class Pickup {
         
         return lnIndex;
     }
-    
-    public boolean SearchOrderTransaction(String fsValue, boolean fbByCode) throws SQLException{
-        if (p_oApp == null){
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
-        
-        p_sMessage = "";    
-        
-        String lsSQL = MiscUtil.addCondition(getSQ_OrderMaster(), "sBranchCd = " + SQLUtil.toSQL(p_sBranchCd));
-        
-        if (p_bWithUI){
-            JSONObject loJSON = showFXDialog.jsonSearch(
-                                p_oApp, 
-                                getSQ_OrderMaster(),  
-                                fsValue, 
-                                "Order No.»Customer Name", 
-                                "sTransNox»sCompnyNm", 
-                                "sTransNox»sCompnyNm", 
-                                fbByCode ? 0 : 1);
-            
-            if (loJSON != null) 
-                return OpenOrderTransaction((String) loJSON.get("sTransNox"));
-            else {
-                p_sMessage = "No record selected.";
-                return false;
-            }
-        }
-        
-        if (fbByCode)
-            lsSQL = MiscUtil.addCondition(lsSQL, "sTransNox = " + SQLUtil.toSQL(fsValue));   
-        else {
-            if (!fsValue.isEmpty()) {
-                lsSQL = MiscUtil.addCondition(lsSQL, "sBriefDsc LIKE " + SQLUtil.toSQL(fsValue + "%")); 
-                lsSQL += " LIMIT 1";
-            }
-        }
-        
-        ResultSet loRS = p_oApp.executeQuery(lsSQL);
-        
-        if (!loRS.next()){
-            MiscUtil.close(loRS);
-            p_sMessage = "No transaction found for the givern criteria.";
-            return false;
-        }
-        
-        lsSQL = loRS.getString("sTransNox");
-        MiscUtil.close(loRS);
-        
-        return OpenOrderTransaction(lsSQL);
-    }
-    
-    public boolean OpenOrderTransaction(String fsTransNox) throws SQLException{
-        p_nEditMode = EditMode.UNKNOWN;
-        
-        if (p_oApp == null){
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
-        
-        
-        p_sMessage = "";
-        String lsSQL;
-        ResultSet loRS;
-        RowSetFactory factory = RowSetProvider.newFactory();
-        
-        lsSQL = getSQ_OrderDetail()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(fsTransNox);
-        
-        //open master
-        loRS = p_oApp.executeQuery(lsSQL);
-        p_oOrder = factory.createCachedRowSet();
-        p_oOrder.populate(loRS);
-        MiscUtil.close(loRS);
-        
-        p_oOrder.last();
-        if (p_oOrder.getRow() <= 0) {
-            p_sMessage = "No transaction was loaded.";
-            return false;
-        }
-        
-        loadWaybill(fsTransNox);
-        p_nEditMode = EditMode.READY;
-        
-        return true;
-    }
-    
-    public boolean UpdateTransaction() throws SQLException{
-        if (p_nEditMode != EditMode.READY){
-            p_sMessage = "Invalid edit mode.";
-            return false;
-        }
-        
-        if (p_bWithParent) {
-            p_sMessage = "Updating of record from other object is not allowed.";
-            return false;
-        }
-//        
-        p_nEditMode = EditMode.UPDATE;
-        return true;
-    }
-
-
-    private boolean isEntryOK() throws SQLException{           
-        //validate master               
-        if ("".equals((String) getMaster("sBatchNox"))){
-            p_sMessage = "Invalid Batch Number Detected!!! \n Verify your Entries then Try Again!!!";
-            return false;
-        }
-        
-        
-        return true;
-    }
-    public boolean SaveTransaction() throws SQLException{
-        if (p_oApp == null){
-            p_sMessage = "Application driver is not set.";
-            return false;
-        }
-        
-        p_sMessage = "";
-        
-        if (p_nEditMode != EditMode.ADDNEW &&
-            p_nEditMode != EditMode.UPDATE){
-            p_sMessage = "Invalid edit mode detected.";
-            return false;
-        }
-        
-        if (!isEntryOK()) return false;
-        
-        
-        int lnCtr = 1;
-        int lnRow;
-        String lsSQL;
-        
-        lnRow = getOrderItemCount();
-//        while(lnCtr <= lnRow ){
-//            setOrder(lnCtr, "dModified", p_oApp.getServerDate().toString());
-//            String transNox = (String)getPayment(lnCtr, "sTransNox");
-//            
-//            if (!isEntryOK(lnCtr)) return false;
-//            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
-//                                        PAYMENT_TABLE, 
-//                                        "",
-//                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
-//                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
-//            
-//            if (!lsSQL.isEmpty()){
-//                
-//                if (!p_bWithParent) p_oApp.beginTrans();
-//                if (!lsSQL.isEmpty()){
-//                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
-//                        if (!p_bWithParent) p_oApp.rollbackTrans();
-//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-//                        return false;
-//                    }
-//                }
-//                
-//                p_nEditMode = EditMode.UNKNOWN;
-//                
-//                if (!p_bWithParent) p_oApp.commitTrans();
-//                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
-//                return true;
-//            }
-//            lnCtr++;
-//        }
-            
-        
-        return true;
-    }
-
 }

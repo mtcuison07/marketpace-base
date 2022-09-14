@@ -30,8 +30,8 @@ import org.rmj.appdriver.constants.EditMode;
  */
 public class WayBill {
     private final String MASTER_TABLE = "ECommerce_Order_Waybill";
-    private final String ORDER_TABLE = "sales_order_master";
-    private final String ODETAIL_TABLE = "sales_order_detail";
+    private final String ORDER_TABLE = "ecommerce_order_master";
+    private final String ODETAIL_TABLE = "ecommerce_order_detail";
     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
@@ -48,6 +48,7 @@ public class WayBill {
     private CachedRowSet p_oMaster;
     private CachedRowSet p_oDetail;
     private CachedRowSet p_oOrder;
+    private CachedRowSet p_oOrderDetail;
     private LTransaction p_oListener;
     private LResult p_oResult;
    
@@ -234,14 +235,34 @@ public class WayBill {
         }
         
         RowSetFactory factory = RowSetProvider.newFactory();
-        p_oOrder = factory.createCachedRowSet();
-        p_oOrder.populate(loRS);
+        p_oOrderDetail = factory.createCachedRowSet();
+        p_oOrderDetail.populate(loRS);
         MiscUtil.close(loRS);
         
         return true;
     }
     
-    
+    public boolean LoadWayBill(String fsTransNox) throws SQLException{
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        p_sMessage = "";    
+        ResultSet loRS = p_oApp.executeQuery(getSQ_Master() + " WHERE a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        if (MiscUtil.RecordCount(loRS) == 0){
+            MiscUtil.close(loRS);
+            p_sMessage = "No record found for the given criteria.";
+            return false;
+        }
+        
+        RowSetFactory factory = RowSetProvider.newFactory();
+        p_oMaster = factory.createCachedRowSet();
+        p_oMaster.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        return true;
+    }
     
     public Object getMaster(int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
@@ -406,22 +427,62 @@ public class WayBill {
         p_oOrder.last();
         return p_oOrder.getRow();
     }
-    
-    public Object getOrderDetail(int fnRow, int fnIndex) throws SQLException{
-        if (fnIndex == 0) return null;
-        
-        p_oOrder.absolute(fnRow);
-        return p_oOrder.getObject(fnIndex);
-    }
-    
-    public Object getOrderDetail(int fnRow, String fsIndex) throws SQLException{
-        return getOrderDetail(fnRow, getColumnIndex(p_oOrder, fsIndex));
-    }
     public int getDetailItemCount() throws SQLException{
-        p_oOrder.last();
-        return p_oOrder.getRow();
+        if (p_oOrderDetail == null) return 0;
+        p_oOrderDetail.last();
+        return p_oOrderDetail.getRow();
     }
     
+    
+    public Object getDetailItem(int fnRow, int fnIndex) throws SQLException{
+        if (getDetailItemCount()  == 0) return null;
+        
+        if (getDetailItemCount() == 0 || fnRow > getDetailItemCount()) return null;   
+       
+        p_oOrderDetail.absolute(fnRow);
+        return p_oOrderDetail.getObject(fnIndex);
+        
+    }
+    
+    public Object getDetailItem(int fnRow, String fsIndex) throws SQLException{
+        return getDetailItem(fnRow, getColumnIndex(p_oOrderDetail, fsIndex));
+    }
+    
+    public void setDetailItem(int fnRow, String fsIndex, Object foValue) throws SQLException{
+        setDetailItem(fnRow, getColumnIndex(p_oOrderDetail, fsIndex), foValue);
+    }
+    
+    public void setDetailItem(int fnRow, int fnIndex, Object foValue) throws SQLException{
+        if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) {
+            System.out.println("Invalid Edit Mode Detected.");
+            return;
+        }
+        //p_oPayment.first();
+        p_oOrderDetail.absolute(fnRow);
+        
+        switch (fnIndex){
+            case 6:
+            case 7:
+            case 8:
+                if (foValue instanceof Integer){
+                    p_oOrderDetail.updateInt(fnIndex, (int) foValue);
+                    p_oOrderDetail.updateRow();
+                }                
+                
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oOrderDetail.getString(fnIndex));
+                break;
+            case 1: //sTransNox
+            case 2: //xBarCodex
+            case 3: //xBrandNme
+            case 4: //xModelNme
+            case 5: //xColorNme
+            case 9: //sReferNox
+                p_oOrderDetail.updateString(fnIndex, (String) foValue);
+                p_oOrderDetail.updateRow();
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oOrderDetail.getString(fnIndex));
+                break;
+        }
+    }
     public void displayMasFields() throws SQLException{
         if (p_nEditMode != EditMode.ADDNEW && p_nEditMode != EditMode.UPDATE) return;
         
@@ -465,27 +526,28 @@ public class WayBill {
         lsSQL = "SELECT " +
                 "  a.sTransNox," +
                 "  a.dTransact, " +
-                "  a.sTermCode," +
-                "  a.nTranTotl," +
-                "  a.nVATRatex," +
-                "  a.nDiscount," +
-                "  a.nAddDiscx," +
-                "  a.nFreightx," +
-                "  a.nAmtPaidx," +
-                "  a.cTranStat," +
-                "  a.sRemarksx," +
-                "  CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sCompnyNm," +
-                "  b.sAddressx," +
-                "  c.sTownName," +
-                "  b.sMobileNo," +
-                "  b.sEmailAdd  " +
+                "  IFNULL(a.sTermIDxx,'') sTermIDxx,  " +
+                "  IFNULL(a.nTranTotl,0) nTranTotl,  " +
+                "  IFNULL(a.nVATRatex,0) nVATRatex,  " +
+                "  IFNULL(a.nDiscount,0) nDiscount,  " +
+                "  IFNULL(a.nAddDiscx,0) nAddDiscx,  " +
+                "  IFNULL(a.nFreightx,0) nFreightx,  " +
+                "  IFNULL(a.nAmtPaidx,0) nAmtPaidx,  " +
+                "  IFNULL(a.cTranStat,0) cTranStat,  " +
+                "  IFNULL(a.sRemarksx,'') sRemarksx,  " +
+                "  CONCAT(IFNULL(b.sFrstName,''), ' ', IFNULL(b.sMiddName,''),' ', IFNULL(b.sLastName,'')) AS sCompnyNm,  " +
+                "  IFNULL(b.sAddressx,'') sAddressx,  " +
+                "  IFNULL(c.sTownName,'') sTownName,  " +
+                "  IFNULL(b.sMobileNo,'') sMobileNo,  " +
+                "  IFNULL(b.sEmailAdd,'') sEmailAdd,   " +
+                "  IFNULL(a.sWaybilNo,'') sWaybilNo   " +
                 "  FROM " + ORDER_TABLE +" a " +
                 "LEFT JOIN Client_Master b " +
                 "	ON a.sClientID = b.sClientID " +
                 "LEFT JOIN TownCity c " + 
                 "ON b.sTownIDxx = c.sTownIDxx " + 
-//                " WHERE sWaybilNo = NULL " +
-                " WHERE sWaybilNo = NULL AND " +lsCondition;
+                " WHERE sWaybilNo IS NOT NULL " +
+                " AND " +lsCondition;
         return lsSQL;
     }
     public String getSQ_Master(){
@@ -566,16 +628,14 @@ public class WayBill {
         String lsSQL = "";
         lsSQL = "SELECT " +
                     "  a.sTransNox, " +
-                    "  d.sBarrcode xBarCodex, " +
-                    "  d.sDescript xDescript, " +
+                    "  IFNULL(d.sBarrcode, '') xBarCodex, " +
                     "  IFNULL(e.sBrandNme, '') xBrandNme, " +
                     "  IFNULL(f.sModelNme, '') xModelNme, " +
                     "  IFNULL(g.sColorNme, '') xColorNme, " +
-                    "  a.nEntryNox, " +
-                    "  a.nQuantity, " +
-                    "  a.nUnitPrce, " +
-                    "  a.sReferNox, " +
-                    "  a.nIssuedxx " +
+                    "  IFNULL(a.nEntryNox, '0') nEntryNox, " +
+                    "  IFNULL(a.nQuantity, '0') nQuantity, " +
+                    "  IFNULL(a.nUnitPrce, '0') nUnitPrce, " +
+                    "  IFNULL(a.sReferNox, '') sReferNox " +
                     "FROM "+ODETAIL_TABLE+" a " +
                     "LEFT JOIN mp_inv_master b " +
                     "	ON a.sStockIDx = b.sListngID " +
@@ -763,13 +823,13 @@ public class WayBill {
         
         //open master
         loRS = p_oApp.executeQuery(lsSQL);
-        p_oOrder = factory.createCachedRowSet();
-        p_oOrder.populate(loRS);
+        p_oOrderDetail = factory.createCachedRowSet();
+        p_oOrderDetail.populate(loRS);
         MiscUtil.close(loRS);
         
         
-        p_oOrder.last();
-        if (p_oOrder.getRow() <= 0) {
+        p_oOrderDetail.last();
+        if (p_oOrderDetail.getRow() <= 0) {
             p_sMessage = "No transaction was loaded.";
             return false;
         }
@@ -802,6 +862,7 @@ public class WayBill {
         
         return true;
     }
+  
     public boolean SaveTransaction() throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -818,45 +879,63 @@ public class WayBill {
         
         if (!isEntryOK()) return false;
         
-        
-        int lnCtr = 1;
+        int lnCtr;
         int lnRow;
         String lsSQL;
         
-        lnRow = getOrderItemCount();
-//        while(lnCtr <= lnRow ){
-//            setOrder(lnCtr, "dModified", p_oApp.getServerDate().toString());
-//            String transNox = (String)getPayment(lnCtr, "sTransNox");
-//            
-//            if (!isEntryOK(lnCtr)) return false;
-//            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
-//                                        PAYMENT_TABLE, 
-//                                        "",
-//                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
-//                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
-//            
-//            if (!lsSQL.isEmpty()){
-//                
-//                if (!p_bWithParent) p_oApp.beginTrans();
-//                if (!lsSQL.isEmpty()){
-//                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
-//                        if (!p_bWithParent) p_oApp.rollbackTrans();
-//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-//                        return false;
-//                    }
-//                }
-//                
-//                p_nEditMode = EditMode.UNKNOWN;
-//                
-//                if (!p_bWithParent) p_oApp.commitTrans();
-//                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
-//                return true;
-//            }
-//            lnCtr++;
-//        }
+        if (p_nEditMode == EditMode.ADDNEW){            
+            //set transaction number on records
+            String lsTransNox = MiscUtil.getNextCode(MASTER_TABLE, "sTransNox", true, p_oApp.getConnection(), p_sBranchCd);
+            p_oMaster.updateObject("sTransNox", lsTransNox);
+            p_oMaster.updateObject("dModified", p_oApp.getServerDate());
+            p_oMaster.updateRow();
             
-        
-        return true;
-    }
+            lsSQL = MiscUtil.rowset2SQL(p_oMaster, MASTER_TABLE, "sPackngDs");
+            
+            if (!lsSQL.isEmpty()){
+                if (!p_bWithParent) p_oApp.beginTrans();
+                
+                if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                    if (!p_bWithParent) p_oApp.rollbackTrans();
+                    p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                    return false;
+                }
+                
+                if (!p_bWithParent) p_oApp.commitTrans();
+                
+                p_nEditMode = EditMode.UNKNOWN;
+                return true;
+            } else{
+                p_sMessage = "No record to save.";
+                return false;
+            }
+        } else {           
+            //set transaction number on records
+            String lsTransNox = (String) getMaster("sTransNox");
 
+            lsSQL = MiscUtil.rowset2SQL(p_oMaster, 
+                                        MASTER_TABLE, 
+                                        "sPackngDs", 
+                                        "sListngID = " + SQLUtil.toSQL(lsTransNox));
+            
+            if (!lsSQL.isEmpty()){
+                if (!p_bWithParent) p_oApp.beginTrans();
+                if (!lsSQL.isEmpty()){
+                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, lsTransNox.substring(0, 4)) <= 0){
+                        if (!p_bWithParent) p_oApp.rollbackTrans();
+                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                        return false;
+                    }
+                }
+                if (!p_bWithParent) p_oApp.commitTrans();
+
+                p_nEditMode = EditMode.UNKNOWN;
+                return true;
+            } else{
+                p_sMessage = "No record to save.";
+                return false;
+            }
+        }
+    }
+    
 }
