@@ -1455,10 +1455,7 @@ public class ClientProfiling {
                                         USER_PROFILE_TABLE, 
                                         "sBrgyNme1;sTownNme1;sBrgyNme2;sTownNme2", 
                                         "sUserIDxx = " + SQLUtil.toSQL(p_oProfile.getString("sUserIDxx")));
-//        lsSQL = MiscUtil.rowset2SQL(p_oProfile, 
-//                                    USER_PROFILE_TABLE, 
-//                                    "", 
-//                                    "sUserIDxx = " + SQLUtil.toSQL(lsUserID));
+
 
         if (!lsSQL.isEmpty()){
             if (!p_bWithParent) p_oApp.beginTrans();
