@@ -295,24 +295,16 @@ public class Pickup {
         }
         
 //        createWaybill();
-        p_sMessage = "";
-        String lsSQL;
-        ResultSet loRS;
-        RowSetFactory factory = RowSetProvider.newFactory();
-        
+       
+         p_sMessage = "";  
+        String lsSQL = "";
         lsSQL = getSQ_Waybill()+ " AND b.sBatchNox = " + SQLUtil.toSQL(fsTransNox);
-        loRS = p_oApp.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) == 0){
-            MiscUtil.close(loRS);
-            p_sMessage = "No record found for the given criteria.";
-            return false;
-        }
-        
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+       
+        RowSetFactory factory = RowSetProvider.newFactory();
         p_oWaybill = factory.createCachedRowSet();
         p_oWaybill.populate(loRS);
-        MiscUtil.close(loRS);
-        
-        p_nEditMode = EditMode.READY;
+        MiscUtil.close(loRS);  
         
         return true;
     }
@@ -326,19 +318,24 @@ public class Pickup {
             for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
                 lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
             }
-            lsCondition = "cTranStat IN (" + lsSQL.substring(2) + ")";
+            lsCondition = "a.cTranStat IN (" + lsSQL.substring(2) + ")";
         } else 
-            lsCondition = "cTranStat = " + SQLUtil.toSQL(lsStat);
+            lsCondition = "a.cTranStat = " + SQLUtil.toSQL(lsStat);
           
         lsSQL = "SELECT" +
-                  " IFNULL(sBatchNox,'') sBatchNox" +
-                  ", IFNULL(dTransact,'') dTransact" +
-                  ", IFNULL(sRemarksx,'') sRemarksx" +
-                  ", IFNULL(dPickedUp,'') dPickedUp" +
-                  ", IFNULL(sPickedBy,'') sPickedBy" +
-                  ", IFNULL(cTranStat,0) cTranStat" +
-               " FROM ECommerce_Pickup_Master " + 
-               " WHERE " + lsCondition;
+                  " IFNULL(a.sBatchNox,'') sBatchNox" +
+                  ", IFNULL(a.dTransact,'') dTransact" +
+                  ", IFNULL(a.sRemarksx,'') sRemarksx" +
+                  ", IFNULL(a.dPickedUp,'') dPickedUp" +
+                  ", IFNULL(a.sPickedBy,'') sPickedBy" +
+                  ", IFNULL(a.cTranStat,0) cTranStat" +
+               " FROM ECommerce_Pickup_Master a " + 
+               ", ECommerce_Order_Master b " + 
+               ", App_User_Profile c " + 
+               " WHERE " + lsCondition +
+               " AND a.sBatchNox = b.sBatchNox "+
+               " AND c.sUserIDxx = b.sAppUsrID "+
+               " ORDER BY dTransact DESC";
                
         return lsSQL;
     }
@@ -346,8 +343,8 @@ public class Pickup {
         String lsSQL = "";
           
         lsSQL = "SELECT" +
-            "  IFNULL(a.sTransNox, '') sTransNox " +
-            ", IFNULL(c.sCompnyNm, '') sCompnyNm " +
+            "  IFNULL(a.sTransNox, '') sTransNox, " +
+            "  CONCAT(IFNULL(c.sFrstName,''), ' ', IFNULL(c.sMiddName,''),' ',IFNULL(c.sLastName,'')) AS sCompnyNm " +
             ", IFNULL(b.sOrderNox, '') sOrderNox " +
             ", IFNULL(a.sTrackrNo, '') sTrackrNo " +
             ", IFNULL(d.sPackngDs, '') sPackngDs " +
@@ -356,11 +353,11 @@ public class Pickup {
             ", IFNULL(b.sTransNox, '') xReferNox " +
             " FROM ECommerce_Order_Waybill a" +
             ", ECommerce_Order_Master b" +
-            ", Client_Master c" +
+            ", App_User_Profile c" +
             ", ECommerce_Packaging d" +
-         " WHERE a.sTransNox = b.sWaybilNo" +
-            " AND b.sClientID = c.sClientID" +
-            " AND a.sPackngCD = d.sPackngCD"  ;
+         " WHERE a.sTransNox = b.sWaybilNo " +
+            " AND b.sAppUsrID = c.sUserIDxx " +
+            " AND a.sPackngCD = d.sPackngCD "  ;
                
         return lsSQL;
     }

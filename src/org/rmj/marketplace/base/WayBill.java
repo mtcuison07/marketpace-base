@@ -523,31 +523,76 @@ public class WayBill {
         } else 
             lsCondition = "a.cTranStat = " + SQLUtil.toSQL(lsStat);
                
-        lsSQL = "SELECT " +
-                "  a.sTransNox," +
-                "  a.dTransact, " +
-                "  IFNULL(a.sTermIDxx,'') sTermIDxx,  " +
-                "  IFNULL(a.nTranTotl,0) nTranTotl,  " +
-                "  IFNULL(a.nVATRatex,0) nVATRatex,  " +
-                "  IFNULL(a.nDiscount,0) nDiscount,  " +
-                "  IFNULL(a.nAddDiscx,0) nAddDiscx,  " +
-                "  IFNULL(a.nFreightx,0) nFreightx,  " +
-                "  IFNULL(a.nAmtPaidx,0) nAmtPaidx,  " +
-                "  IFNULL(a.cTranStat,0) cTranStat,  " +
-                "  IFNULL(a.sRemarksx,'') sRemarksx,  " +
-                "  CONCAT(IFNULL(b.sFrstName,''), ' ', IFNULL(b.sMiddName,''),' ', IFNULL(b.sLastName,'')) AS sCompnyNm,  " +
-                "  IFNULL(b.sAddressx,'') sAddressx,  " +
-                "  IFNULL(c.sTownName,'') sTownName,  " +
-                "  IFNULL(b.sMobileNo,'') sMobileNo,  " +
-                "  IFNULL(b.sEmailAdd,'') sEmailAdd,   " +
-                "  IFNULL(a.sWaybilNo,'') sWaybilNo   " +
+//        lsSQL = "SELECT " +
+//                "  IFNULL(a.sTransNox,'') sTransNox," +
+//                "  IFNULL(a.dTransact,'') dTransact, " +
+//                "  IFNULL(a.sTermIDxx,'') sTermIDxx,  " +
+//                "  IFNULL(a.nTranTotl,0) nTranTotl,  " +
+//                "  IFNULL(a.nVATRatex,0) nVATRatex,  " +
+//                "  IFNULL(a.nDiscount,0) nDiscount,  " +
+//                "  IFNULL(a.nAddDiscx,0) nAddDiscx,  " +
+//                "  IFNULL(a.nFreightx,0) nFreightx,  " +
+//                "  IFNULL(a.nAmtPaidx,0) nAmtPaidx,  " +
+//                "  IFNULL(a.cTranStat,0) cTranStat,  " +
+//                "  IFNULL(a.sRemarksx,'') sRemarksx,  " +
+//                "  CONCAT(IFNULL(b.sFrstName,''), ' ', IFNULL(b.sMiddName,''),' ', IFNULL(b.sLastName,'')) AS sCompnyNm,  " +
+//                "  IFNULL(b.sAddressx,'') sAddressx,  " +
+//                "  IFNULL(c.sTownName,'') sTownName,  " +
+//                "  IFNULL(b.sMobileNo,'') sMobileNo,  " +
+//                "  IFNULL(b.sEmailAdd,'') sEmailAdd,   " +
+//                "  IFNULL(a.sWaybilNo,'') sWaybilNo   " +
+//                "  FROM " + ORDER_TABLE +" a " +
+//                "LEFT JOIN Client_Master b " +
+//                "	ON a.sClientID = b.sClientID " +
+//                "LEFT JOIN TownCity c " + 
+//                "ON b.sTownIDxx = c.sTownIDxx " + 
+//                " WHERE sWaybilNo IS NOT NULL " +
+//                " AND " +lsCondition + "ORDER BY dTransact DESC";
+            lsSQL = "SELECT " +
+                "   IFNULL(a.sTransNox,'') sTransNox, " +
+                "   IFNULL(a.dTransact,'') dTransact, " +
+                "   IFNULL(a.sTermIDxx,'') sTermIDxx, " +
+                "   IFNULL(h.sTermName,'') sTermName, " +
+                "   IFNULL(a.nTranTotl,0) nTranTotl, " +
+                "   IFNULL(a.nVATRatex,0) nVATRatex, " +
+                "   IFNULL(a.nDiscount,0) nDiscount, " +
+                "   IFNULL(a.nAddDiscx,0) nAddDiscx, " +
+                "   IFNULL(a.nFreightx,0) nFreightx, " +
+                "   IFNULL(a.nAmtPaidx,0) nAmtPaidx, " +
+                "   IFNULL(a.cTranStat,0) cTranStat, " +
+                "   IFNULL(a.sRemarksx,'') sRemarksx, " +
+                "   CONCAT(IFNULL(c.sFrstName,''), ' ', IFNULL(c.sMiddName,''),' ',IFNULL(c.sLastName,'')) AS sCompnyNm, " +
+                "   IFNULL(c.sHouseNo1,'') sHouseNo1, " +
+                "   IFNULL(c.sAddress1,'') sAddress1, " +
+                "   IFNULL(d.sBrgyName,'') sBrgyNme1, " +
+                "   IFNULL(e.sTownName,'') sTownNme1, " +
+                "   IFNULL(c.sHouseNo2,'') sHouseNo2, " +
+                "   IFNULL(c.sAddress2,'') sAddress2, " +
+                "   IFNULL(f.sBrgyName,'') sBrgyNme2, " +
+                "   IFNULL(g.sTownName,'') sTownNme2," +
+                "   IFNULL(i.sMobileNo,'') sMobileNo,  " +
+                "   IFNULL(j.sEmailAdd,'') sEmailAdd,   " +
+                "   IFNULL(a.sWaybilNo,'') sWaybilNo   " +
                 "  FROM " + ORDER_TABLE +" a " +
-                "LEFT JOIN Client_Master b " +
-                "	ON a.sClientID = b.sClientID " +
-                "LEFT JOIN TownCity c " + 
-                "ON b.sTownIDxx = c.sTownIDxx " + 
-                " WHERE sWaybilNo IS NOT NULL " +
-                " AND " +lsCondition;
+                "  LEFT JOIN App_User_Profile c  " +
+                "   ON a.sAppUsrID = c.sUserIDxx  " +
+                "  LEFT JOIN Barangay d   " +
+                "   ON c.sBrgyIDx1 = d.sBrgyIDxx   " +
+                "  LEFT JOIN TownCity e   " +
+                "   ON c.sTownIDx1 = e.sTownIDxx   " +
+                "  LEFT JOIN Barangay f   " +
+                "   ON c.sBrgyIDx2 = f.sBrgyIDxx   " +
+                "  LEFT JOIN TownCity g   " +
+                "   ON c.sTownIDx2 = g.sTownIDxx   " +
+                "  LEFT JOIN Term h   " +
+                "   ON a.sTermIDxx = h.sTermIDxx   " +
+                "  LEFT JOIN App_User_Mobile i   " +
+                "   ON a.sAppUsrID = i.sUserIDxx  " +
+                "  LEFT JOIN App_User_Email j   " +
+                "   ON a.sAppUsrID = j.sUserIDxx  " +
+                "  WHERE a.sAppUsrID = c.sUserIDxx  " +
+                "  AND sWaybilNo IS NOT NULL " +
+                "  AND "  + lsCondition + "ORDER BY dTransact DESC";
         return lsSQL;
     }
     public String getSQ_Master(){
