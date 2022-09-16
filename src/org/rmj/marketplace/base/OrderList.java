@@ -93,7 +93,8 @@ public class OrderList {
         }
         
         p_sMessage = "";    
-        ResultSet loRS = p_oApp.executeQuery(getSQ_Master());
+        ResultSet loRS = p_oApp.executeQuery(getSQ_Master() + " ORDER BY a.dTransact DESC");
+        
         if (MiscUtil.RecordCount(loRS) == 0){
             MiscUtil.close(loRS);
             p_sMessage = "No record found for the given criteria.";
@@ -113,26 +114,16 @@ public class OrderList {
             return false;
         }
         
-        p_sMessage = "";    
-        
+        p_sMessage = "";  
         String lsSQL = "";
         lsSQL = getSQ_Detail()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(fsTransNox);
+        System.out.println(lsSQL);
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
        
-        ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
-        
-        loRS = p_oApp.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) == 0){
-            MiscUtil.close(loRS);
-            p_sMessage = "No record found for the order criteria.";
-            return false;
-        }
-        
         p_oDetailItem = factory.createCachedRowSet();
         p_oDetailItem.populate(loRS);
-        MiscUtil.close(loRS);
-        
-        
+        MiscUtil.close(loRS);  
         return true;
     }
     
@@ -493,14 +484,9 @@ public class OrderList {
         p_sMessage = "";    
         String lsSQL = "";
         lsSQL = MiscUtil.addCondition(getSQ_Issued(), "b.sTransNox = " + SQLUtil.toSQL(fsTransNox));
-        System.out.println(lsSQL);
+     
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
-        if (MiscUtil.RecordCount(loRS) == 0){
-            MiscUtil.close(loRS);
-            p_sMessage = "No record found for the given criteria.";
-            return false;
-        }
-        
+       
         RowSetFactory factory = RowSetProvider.newFactory();
         p_oIssuance = factory.createCachedRowSet();
         p_oIssuance.populate(loRS);
@@ -555,41 +541,62 @@ public class OrderList {
             lsCondition = "a.cTranStat = " + SQLUtil.toSQL(lsStat);
                
         lsSQL = "SELECT " +
-                "  a.sTransNox," +
-                "  a.dTransact, " +
-                "  a.sTermIDxx," +
-                "  IFNULL(a.nTranTotl,0) nTranTotl," +
-                "  IFNULL(a.nVATRatex,0) nVATRatex," +
-                "  IFNULL(a.nDiscount,0) nDiscount," +
-                "  IFNULL(a.nAddDiscx,0) nAddDiscx," +
-                "  IFNULL(a.nFreightx,0) nFreightx," +
-                "  IFNULL(a.nAmtPaidx,0) nAmtPaidx," +
-                "  IFNULL(a.cTranStat,0) cTranStat," +
-                "  a.sRemarksx," +
-                "  CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName) AS sCompnyNm," +
-                "  b.sAddressx," +
-                "  c.sTownName," +
-                "  IFNULL(a.sPOSNoxxx,'') sPOSNoxxx" +
+                "   IFNULL(a.sTransNox,'') sTransNox, " +
+                "   IFNULL(a.dTransact,'') dTransact, " +
+                "   IFNULL(a.sTermIDxx,'') sTermIDxx, " +
+                "   IFNULL(h.sTermName,'') sTermName, " +
+                "   IFNULL(a.nTranTotl,0) nTranTotl, " +
+                "   IFNULL(a.nVATRatex,0) nVATRatex, " +
+                "   IFNULL(a.nDiscount,0) nDiscount, " +
+                "   IFNULL(a.nAddDiscx,0) nAddDiscx, " +
+                "   IFNULL(a.nFreightx,0) nFreightx, " +
+                "   IFNULL(a.nAmtPaidx,0) nAmtPaidx, " +
+                "   IFNULL(a.cTranStat,0) cTranStat, " +
+                "   IFNULL(a.sRemarksx,'') sRemarksx, " +
+                "   CONCAT(IFNULL(c.sFrstName,''), ' ', IFNULL(c.sMiddName,''),' ',IFNULL(c.sLastName,'')) AS sCompnyNm, " +
+                "   IFNULL(c.sHouseNo1,'') sHouseNo1, " +
+                "   IFNULL(c.sAddress1,'') sAddress1, " +
+                "   IFNULL(d.sBrgyName,'') sBrgyNme1, " +
+                "   IFNULL(e.sTownName,'') sTownNme1, " +
+                "   IFNULL(i.sProvName,'') sProvNme1, " +
+                "   IFNULL(c.sHouseNo2,'') sHouseNo2, " +
+                "   IFNULL(c.sAddress2,'') sAddress2, " +
+                "   IFNULL(f.sBrgyName,'') sBrgyNme2, " +
+                "   IFNULL(g.sTownName,'') sTownNme2," +
+                "   IFNULL(j.sProvName,'') sProvNme2, " +
+                "   IFNULL(a.sPOSNoxxx,'') sPOSNoxxx " +
                 "  FROM " + MASTER_TABLE +" a " +
-                "LEFT JOIN Client_Master b " +
-                " ON a.sClientID = b.sClientID " +
-                "LEFT JOIN TownCity c " + 
-                "ON b.sTownIDxx = c.sTownIDxx " + 
-                " WHERE " + lsCondition;
+                "  LEFT JOIN App_User_Profile c  " +
+                "   ON a.sAppUsrID = c.sUserIDxx  " +
+                "  LEFT JOIN Barangay d   " +
+                "   ON c.sBrgyIDx1 = d.sBrgyIDxx   " +
+                "  LEFT JOIN TownCity e   " +
+                "   ON c.sTownIDx1 = e.sTownIDxx   " +
+                "  LEFT JOIN Barangay f   " +
+                "   ON c.sBrgyIDx2 = f.sBrgyIDxx   " +
+                "  LEFT JOIN TownCity g   " +
+                "   ON c.sTownIDx2 = g.sTownIDxx   " +
+                "  LEFT JOIN Term h   " +
+                "   ON a.sTermIDxx = h.sTermIDxx   " +
+                "  LEFT JOIN Province i   " +
+                "   ON e.sProvIDxx = i.sProvIDxx   " +
+                "  LEFT JOIN Province j   " +
+                "   ON g.sProvIDxx = j.sProvIDxx   " +
+                "  WHERE a.sAppUsrID = c.sUserIDxx AND " + lsCondition;
         return lsSQL;
     }
     
     public String getSQ_Detail(){
         String lsSQL = "";
         lsSQL = "SELECT " +
-                    "  a.sTransNox, " +
-                    "  d.sBarrcode xBarCodex, " +
+                    "  IFNULL(a.sTransNox, '') sTransNox," +
+                    "  IFNULL(d.sBarrcode, '') xBarCodex, " +
                     "  IFNULL(e.sBrandNme, '') xBrandNme, " +
                     "  IFNULL(f.sModelNme, '') xModelNme, " +
                     "  IFNULL(g.sColorNme, '') xColorNme, " +
-                    "  IFNULL(a.nEntryNox, '0') nEntryNox, " +
-                    "  IFNULL(a.nQuantity, '0') nQuantity, " +
-                    "  IFNULL(a.nUnitPrce, '0') nUnitPrce, " +
+                    "  IFNULL(a.nEntryNox, 0) nEntryNox, " +
+                    "  IFNULL(a.nQuantity, 0) nQuantity, " +
+                    "  IFNULL(a.nUnitPrce, 0) nUnitPrce, " +
                     "  IFNULL(a.sReferNox, '') sReferNox " +
                     "FROM "+DETAIL_TABLE+" a " +
                     "LEFT JOIN mp_inv_master b " +
