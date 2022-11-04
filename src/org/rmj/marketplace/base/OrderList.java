@@ -29,7 +29,9 @@ import org.rmj.appdriver.constants.TransactionStatus;
 public class OrderList {
      private final String MASTER_TABLE = "ecommerce_order_master";
     private final String DETAIL_TABLE = "ecommerce_order_detail";
-    private final String PAYMENT_TABLE = "other_payment_trans";
+    private final String PAYMENT_TABLE = "other_payment_received";
+    
+//    private final String PAYMENT_TABLE = "other_payment_trans";
     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
@@ -117,7 +119,6 @@ public class OrderList {
         p_sMessage = "";  
         String lsSQL = "";
         lsSQL = getSQ_Detail()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(fsTransNox);
-        System.out.println(lsSQL);
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
        
         RowSetFactory factory = RowSetProvider.newFactory();
@@ -331,12 +332,12 @@ public class OrderList {
         p_oPayment.absolute(fnRow);
         
         switch (fnIndex){
-            case 6: //sRemarksx
+            case 7: //sRemarksx
                 p_oPayment.updateString(fnIndex, (String) foValue);
                 p_oPayment.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oPayment.getString(fnIndex));
                 break;
-            case 9:
+            case 10:
                 if (foValue instanceof Integer){
                     p_oPayment.updateInt(fnIndex, (int) foValue);
                     p_oPayment.updateRow();
@@ -344,7 +345,7 @@ public class OrderList {
                 
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oPayment.getString(fnIndex));
                 break;
-            case 10:
+            case 11:
                 if (foValue instanceof Date){
                     p_oPayment.updateDate(fnIndex, SQLUtil.toDate((Date) foValue));
                 } else
@@ -509,21 +510,42 @@ public class OrderList {
         
         return true;
     }
+//    public String getSQ_Payment(){
+//        String lsSQL = "";
+//        lsSQL = "SELECT " +
+//                "  IFNULL(sTransNox, '') sTransNox" +
+//                ", IFNULL(dTransact, '') dTransact" +
+//                ", IFNULL(sReferCde, '') sReferCde" +
+//                ", IFNULL(sReferNox, '') sReferNox" +
+//                ", IFNULL(nAmountxx, '') nAmountxx" +
+//                ", IFNULL(sRemarksx, '') sRemarksx" +
+//                ", IFNULL(sSourceCd, '') sSourceCd" +
+//                ", IFNULL(sSourceNo, '') sSourceNo" +
+//                ", IFNULL(cTranStat, '') cTranStat" +
+//                ", IFNULL(dModified, '') dModified" +
+//                "  FROM " + PAYMENT_TABLE +
+//                " WHERE sSourceCD = 'MPSO' ";
+//        return lsSQL;
+//    }
     public String getSQ_Payment(){
         String lsSQL = "";
+        
         lsSQL = "SELECT " +
-                "  IFNULL(sTransNox, '') sTransNox" +
-                ", IFNULL(dTransact, '') dTransact" +
-                ", IFNULL(sReferCde, '') sReferCde" +
-                ", IFNULL(sReferNox, '') sReferNox" +
-                ", IFNULL(nAmountxx, '') nAmountxx" +
-                ", IFNULL(sRemarksx, '') sRemarksx" +
-                ", IFNULL(sSourceCd, '') sSourceCd" +
-                ", IFNULL(sSourceNo, '') sSourceNo" +
-                ", IFNULL(cTranStat, '') cTranStat" +
-                ", IFNULL(dModified, '') dModified" +
-                "  FROM " + PAYMENT_TABLE +
-                " WHERE sSourceCD = 'MPSO' ";
+                "  IFNULL(a.sTransNox, '') sTransNox" +
+                ", IFNULL(b.sClientID, '') sClientID" +
+                ", IFNULL(a.sReferNox, '') sReferNox" +
+                ", IFNULL(a.nTotlAmnt, '') nTotlAmnt" +
+                ", IFNULL(a.nAmtPaidx, '') nAmtPaidx" +
+                ", IFNULL(a.sTermCode, '') sTermCode" +
+                ", IFNULL(a.sRemarksx, '') sRemarksx" +
+                ", IFNULL(a.sSourceCd, '') sSourceCd" +
+                ", IFNULL(a.sSourceNo, '') sSourceNo" +
+                ", IFNULL(a.cTranStat, '') cTranStat" +
+                ", IFNULL(a.dModified, '') dModified" +
+                "  FROM " + PAYMENT_TABLE + " a " +
+                "    LEFT JOIN Client_Master b " +
+                "       ON a.sClientID = b.sClientID " +
+                " WHERE a.sSourceCD = 'MPSO' ";
         return lsSQL;
     }
     public String getSQ_Master(){
@@ -543,7 +565,7 @@ public class OrderList {
         lsSQL = "SELECT " +
                 "   IFNULL(a.sTransNox,'') sTransNox, " +
                 "   IFNULL(a.dTransact,'') dTransact, " +
-                "   IFNULL(a.sTermIDxx,'') sTermIDxx, " +
+                "   IFNULL(a.sClientID,'') sClientID, " +
                 "   IFNULL(h.sTermName,'') sTermName, " +
                 "   IFNULL(a.nTranTotl,0) nTranTotl, " +
                 "   IFNULL(a.nVATRatex,0) nVATRatex, " +
