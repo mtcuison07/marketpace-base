@@ -118,13 +118,25 @@ public class OrderList {
         
         p_sMessage = "";  
         String lsSQL = "";
-        lsSQL = getSQ_Detail()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(fsTransNox);
-        ResultSet loRS = p_oApp.executeQuery(lsSQL);
-       
+        ResultSet loRS;
         RowSetFactory factory = RowSetProvider.newFactory();
+        
+        lsSQL = MiscUtil.addCondition(getSQ_Master(), "a.sTransNox = " + SQLUtil.toSQL(fsTransNox));
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oMaster = factory.createCachedRowSet();
+        p_oMaster.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        lsSQL = getSQ_Detail()+ " WHERE a.sTransNox = " + SQLUtil.toSQL(fsTransNox);
+        loRS = p_oApp.executeQuery(lsSQL);
         p_oDetailItem = factory.createCachedRowSet();
         p_oDetailItem.populate(loRS);
-        MiscUtil.close(loRS);  
+        MiscUtil.close(loRS);
+        
+//       
+//        p_oDetailItem = factory.createCachedRowSet();
+//        p_oDetailItem.populate(loRS);
+//        MiscUtil.close(loRS);  
         return true;
     }
     
@@ -162,7 +174,6 @@ public class OrderList {
                 break;
             case 1: 
             case 3:
-            case 11:
                 p_oMaster.updateString(fnIndex, (String) foValue);
                 p_oMaster.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
@@ -173,6 +184,8 @@ public class OrderList {
             case 7:
             case 8:
             case 9:
+            case 10:
+            case 25:
                 if (foValue instanceof Double)
                     p_oMaster.updateDouble(fnIndex, (double) foValue);
                 else 
@@ -182,7 +195,7 @@ public class OrderList {
                 p_oMaster.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oMaster.getString(fnIndex));
                 break;
-            case 10:
+            case 11:
                 if (foValue instanceof Integer)
                     p_oMaster.updateInt(fnIndex, (int) foValue);
                 else 
@@ -559,8 +572,9 @@ public class OrderList {
                 lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
             }
             lsCondition = "a.cTranStat IN (" + lsSQL.substring(2) + ")";
-        } else 
+        } else{
             lsCondition = "a.cTranStat = " + SQLUtil.toSQL(lsStat);
+        } 
                
         lsSQL = "SELECT " +
                 "   IFNULL(a.sTransNox,'') sTransNox, " +
@@ -586,7 +600,8 @@ public class OrderList {
                 "   IFNULL(f.sBrgyName,'') sBrgyNme2, " +
                 "   IFNULL(g.sTownName,'') sTownNme2," +
                 "   IFNULL(j.sProvName,'') sProvNme2, " +
-                "   IFNULL(a.sPOSNoxxx,'') sPOSNoxxx " +
+                "   IFNULL(a.sPOSNoxxx,'') sPOSNoxxx, " +
+                "   IFNULL(a.nProcPaym, 0) nProcPaym " +
                 "  FROM " + MASTER_TABLE +" a " +
                 "  LEFT JOIN App_User_Profile c  " +
                 "   ON a.sAppUsrID = c.sUserIDxx  " +
@@ -698,6 +713,7 @@ public class OrderList {
         int lnRow;
         String lsSQL;
         
+        
         lnRow = getPaymentItemCount();
         while(lnCtr <= lnRow ){
             setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
@@ -714,13 +730,32 @@ public class OrderList {
                 
                 if (!p_bWithParent) p_oApp.beginTrans();
                 if (!lsSQL.isEmpty()){
+                    if (p_oApp.executeQuery(lsSQL, PAYMENT_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
+                        if (!p_bWithParent) p_oApp.rollbackTrans();
+                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                        return false;
+                    }
+                }
+                if(Integer.parseInt(getPayment(lnCtr,"cTranStat").toString())>0){
+                    String lsTransNox = (String) getPayment(lnCtr,"sSourceNo");
+                    
+                    double lnValue = Double.valueOf(getMaster("nProcPaym").toString());
+                    System.out.println("lnValue = " + lnValue);
+                    lnValue = lnValue + Double.valueOf(getPayment(lnCtr,"nAmtPaidx").toString());
+//                    setMaster("nProcPaym", lnValue);
+
+                    lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+                                        "  nProcPaym = " + SQLUtil.toSQL(lnValue) +
+                                        ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
+                                    " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
+                    if (!lsSQL.isEmpty()){
                     if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
                         if (!p_bWithParent) p_oApp.rollbackTrans();
                         p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
                         return false;
                     }
                 }
-                
+                }
                 p_nEditMode = EditMode.UNKNOWN;
                 
                 if (!p_bWithParent) p_oApp.commitTrans();
