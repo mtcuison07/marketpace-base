@@ -586,12 +586,15 @@ public class WayBill {
                 "   ON c.sTownIDx2 = g.sTownIDxx   " +
                 "  LEFT JOIN Term h   " +
                 "   ON a.sTermIDxx = h.sTermIDxx   " +
-                "  LEFT JOIN App_User_Mobile i   " +
+                "  LEFT JOIN App_User_Mobile i   " + 
                 "   ON a.sAppUsrID = i.sUserIDxx  " +
                 "  LEFT JOIN App_User_Email j   " +
                 "   ON a.sAppUsrID = j.sUserIDxx  " +
                 "  WHERE a.sAppUsrID = c.sUserIDxx  " +
-                "  AND sWaybilNo IS NOT NULL " +
+                "  AND (a.dWaybillx IS NOT NULL  AND a.dWaybillx <> '') " +
+                "  AND (a.sWaybilNo IS NOT NULL  AND a.sWaybilNo <> '') " +
+                "  AND (a.sBatchNox IS NULL  OR a.sBatchNox = '') " +
+                "  AND (a.dPickedUp IS NULL  OR a.dPickedUp = '') " +
                 "  AND "  + lsCondition + "ORDER BY dTransact DESC";
         return lsSQL;
     }
