@@ -50,6 +50,7 @@ public class OrderList {
     private CachedRowSet p_oDetailItem;
     private CachedRowSet p_oIssuance;
     private CachedRowSet p_oPayment;
+    private CachedRowSet p_oPaid;
     private LTransaction p_oListener;
     private LResult p_oResult;
    
@@ -97,12 +98,12 @@ public class OrderList {
         p_sMessage = "";    
         ResultSet loRS = p_oApp.executeQuery(getSQ_Master() + " ORDER BY a.dTransact DESC");
         
+        System.out.println(getSQ_Master() + " ORDER BY a.dTransact DESC");
         if (MiscUtil.RecordCount(loRS) == 0){
             MiscUtil.close(loRS);
             p_sMessage = "No record found for the given criteria.";
             return false;
         }
-        
         RowSetFactory factory = RowSetProvider.newFactory();
         p_oMaster = factory.createCachedRowSet();
         p_oMaster.populate(loRS);
@@ -345,7 +346,7 @@ public class OrderList {
         p_oPayment.absolute(fnRow);
         
         switch (fnIndex){
-            case 7: //sRemarksx
+            case 7: //
                 p_oPayment.updateString(fnIndex, (String) foValue);
                 p_oPayment.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oPayment.getString(fnIndex));
@@ -356,6 +357,16 @@ public class OrderList {
                     p_oPayment.updateRow();
                 }                
                 
+                if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oPayment.getString(fnIndex));
+                break;
+            case 5:
+                
+                if (foValue instanceof Double)
+                    p_oPayment.updateDouble(fnIndex, (double) foValue);
+                else 
+                    p_oPayment.updateDouble(fnIndex, 0.00);           
+                
+                p_oPayment.updateRow();
                 if (p_oListener != null) p_oListener.MasterRetreive(fnIndex, p_oPayment.getString(fnIndex));
                 break;
             case 11:
@@ -554,10 +565,13 @@ public class OrderList {
                 ", IFNULL(a.sSourceCd, '') sSourceCd" +
                 ", IFNULL(a.sSourceNo, '') sSourceNo" +
                 ", IFNULL(a.cTranStat, '') cTranStat" +
+                ", IFNULL(c.sTermName, '') sTermName" +
                 ", IFNULL(a.dModified, '') dModified" +
                 "  FROM " + PAYMENT_TABLE + " a " +
                 "    LEFT JOIN Client_Master b " +
                 "       ON a.sClientID = b.sClientID " +
+                "    LEFT JOIN Term c " +
+                "       ON a.sTermCode = c.sTermIDxx " +
                 " WHERE a.sSourceCD = 'MPSO' ";
         return lsSQL;
     }
@@ -619,7 +633,9 @@ public class OrderList {
                 "   ON e.sProvIDxx = i.sProvIDxx   " +
                 "  LEFT JOIN Province j   " +
                 "   ON g.sProvIDxx = j.sProvIDxx   " +
-                "  WHERE a.sAppUsrID = c.sUserIDxx AND " + lsCondition;
+                "  WHERE a.sAppUsrID = c.sUserIDxx " +
+                "  AND (a.sPOSNoxxx IS NULL OR a.sPOSNoxxx = '') " +
+                "  AND " +lsCondition;
         return lsSQL;
     }
     
@@ -693,6 +709,83 @@ public class OrderList {
         
         return lnIndex;
     }
+//    public boolean SaveTransaction() throws SQLException{
+//        if (p_oApp == null){
+//            p_sMessage = "Application driver is not set.";
+//            return false;
+//        }
+//        
+//        p_sMessage = "";
+//        
+//        if (p_nEditMode != EditMode.ADDNEW &&
+//            p_nEditMode != EditMode.UPDATE){
+//            p_sMessage = "Invalid edit mode detected.";
+//            return false;
+//        }
+//        
+//        
+//        
+//        int lnCtr = 1;
+//        int lnRow;
+//        String lsSQL;
+//        
+//        
+//        lnRow = getPaymentItemCount();
+//        while(lnCtr <= lnRow ){
+//            setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
+//            String transNox = (String)getPayment(lnCtr, "sTransNox");
+//            System.out.println("nAmtPaidx = " +(String)getPayment(lnCtr, "nAmtPaidx"));
+//            if (!isEntryOK(lnCtr)) return false;
+//            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
+//                                        PAYMENT_TABLE, 
+//                                        "",
+//                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
+//                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
+//            
+//            if (!lsSQL.isEmpty()){
+//                
+//                if (!p_bWithParent) p_oApp.beginTrans();
+//                if (!lsSQL.isEmpty()){
+//                    if (p_oApp.executeQuery(lsSQL, PAYMENT_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
+//                        if (!p_bWithParent) p_oApp.rollbackTrans();
+//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+//                        return false;
+//                    }
+//                }
+//                if(Integer.parseInt(getPayment(lnCtr,"cTranStat").toString())>0){
+//                    String lsTransNox = (String) getPayment(lnCtr,"sSourceNo");
+//                    
+//                    double lnValue = Double.valueOf(getMaster("nProcPaym").toString());
+//                    System.out.println("lnValue = " + lnValue);
+//                    lnValue = lnValue + Double.valueOf(getPayment(lnCtr,"nAmtPaidx").toString());
+////                    setMaster("nProcPaym", lnValue);
+//
+//                    lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+//                                        "  nProcPaym = " + SQLUtil.toSQL(lnValue) +
+//                                        ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
+//                                    " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
+//                    if (!lsSQL.isEmpty()){
+//                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
+//                        if (!p_bWithParent) p_oApp.rollbackTrans();
+//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+//                        return false;
+//                    }
+//                }
+//                }
+//                p_nEditMode = EditMode.UNKNOWN;
+//                
+//                if (!p_bWithParent) p_oApp.commitTrans();
+//                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
+//                return true;
+//            }
+//            lnCtr++;
+//        }
+//            
+//        
+//        return true;
+//    }
+//    
+//    
     public boolean SaveTransaction() throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
@@ -709,63 +802,62 @@ public class OrderList {
         
         
         
+        //set transaction number on records
         int lnCtr = 1;
         int lnRow;
         String lsSQL;
         
         
         lnRow = getPaymentItemCount();
+//        
         while(lnCtr <= lnRow ){
-            setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
-            String transNox = (String)getPayment(lnCtr, "sTransNox");
-            
-            if (!isEntryOK(lnCtr)) return false;
-            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
-                                        PAYMENT_TABLE, 
-                                        "",
-                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
-                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
-            
-            if (!lsSQL.isEmpty()){
-                
-                if (!p_bWithParent) p_oApp.beginTrans();
-                if (!lsSQL.isEmpty()){
-                    if (p_oApp.executeQuery(lsSQL, PAYMENT_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
-                        if (!p_bWithParent) p_oApp.rollbackTrans();
-                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-                        return false;
-                    }
-                }
-                if(Integer.parseInt(getPayment(lnCtr,"cTranStat").toString())>0){
-                    String lsTransNox = (String) getPayment(lnCtr,"sSourceNo");
-                    
-                    double lnValue = Double.valueOf(getMaster("nProcPaym").toString());
-                    System.out.println("lnValue = " + lnValue);
-                    lnValue = lnValue + Double.valueOf(getPayment(lnCtr,"nAmtPaidx").toString());
-//                    setMaster("nProcPaym", lnValue);
+                setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
+                String transNox = (String)getPayment(lnCtr, "sTransNox");
+                if (!isEntryOK(lnCtr)) return false;
+                lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
+                                            PAYMENT_TABLE, 
+                                            "",
+                                            " sTransNox = " + SQLUtil.toSQL(transNox) 
+                                            + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
 
-                    lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
-                                        "  nProcPaym = " + SQLUtil.toSQL(lnValue) +
-                                        ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
-                                    " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
+                if (!lsSQL.isEmpty()){
+
+                    if (!p_bWithParent) p_oApp.beginTrans();
                     if (!lsSQL.isEmpty()){
-                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
-                        if (!p_bWithParent) p_oApp.rollbackTrans();
-                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-                        return false;
+                        if (p_oApp.executeQuery(lsSQL, PAYMENT_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
+                            if (!p_bWithParent) p_oApp.rollbackTrans();
+                            p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                            return false;
+                        }
                     }
+                    if(Integer.parseInt(getPayment(lnCtr,"cTranStat").toString())>0){
+                        String lsTransNox = (String) getPayment(lnCtr,"sSourceNo");
+
+                        double lnValue = Double.valueOf(getMaster("nProcPaym").toString());
+                        System.out.println("lnValue = " + lnValue);
+                        lnValue = lnValue + Double.valueOf(getPayment(lnCtr,"nAmtPaidx").toString());
+    //                    setMaster("nProcPaym", lnValue);
+
+                        lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
+                                            "  nProcPaym = " + SQLUtil.toSQL(lnValue) +
+                                            ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
+                                        " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
+                        if (!lsSQL.isEmpty()){
+                        if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
+                            if (!p_bWithParent) p_oApp.rollbackTrans();
+                            p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
+                            return false;
+                        }
+                    }
+                    }
+                    p_nEditMode = EditMode.UNKNOWN;
+
+                    if (!p_bWithParent) p_oApp.commitTrans();
+                    if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
+                    return true;
                 }
-                }
-                p_nEditMode = EditMode.UNKNOWN;
-                
-                if (!p_bWithParent) p_oApp.commitTrans();
-                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
-                return true;
+                lnCtr++;
             }
-            lnCtr++;
-        }
-            
-        
         return true;
     }
     
@@ -801,6 +893,37 @@ public class OrderList {
         MiscUtil.close(loRS);
         
         p_nEditMode = EditMode.READY;
+        
+        return true;
+    }
+    public boolean OpenPayment(String fsTransNox) throws SQLException{
+        p_nEditMode = EditMode.UNKNOWN;
+        
+        if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        
+        p_sMessage = "";
+        String lsSQL;
+        ResultSet loRS;
+        RowSetFactory factory = RowSetProvider.newFactory();
+        
+        lsSQL = getSQ_Payment()+ " AND a.sTransNox = " + SQLUtil.toSQL(fsTransNox);
+        System.out.println(lsSQL);
+        //open master
+        loRS = p_oApp.executeQuery(lsSQL);
+        p_oPayment = factory.createCachedRowSet();
+        p_oPayment.populate(loRS);
+        MiscUtil.close(loRS);
+        p_oPayment.last();
+        if (p_oPayment.getRow() <= 0) {
+            p_sMessage = "No transaction was loaded.";
+            return false;
+        }
+        
+        p_nEditMode = EditMode.UPDATE;
         
         return true;
     }
