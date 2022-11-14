@@ -30,8 +30,8 @@ import org.rmj.appdriver.constants.EditMode;
  */
 public class WayBill {
     private final String MASTER_TABLE = "ECommerce_Order_Waybill";
-    private final String ORDER_TABLE = "ecommerce_order_master";
-    private final String ODETAIL_TABLE = "ecommerce_order_detail";
+    private final String ORDER_TABLE = "ECommerce_Order_Master";
+    private final String ODETAIL_TABLE = "ECommerce_Order_Detail";
     
     private final GRider p_oApp;
     private final boolean p_bWithParent;
@@ -685,9 +685,9 @@ public class WayBill {
                     "  IFNULL(a.nUnitPrce, '0') nUnitPrce, " +
                     "  IFNULL(a.sReferNox, '') sReferNox " +
                     "FROM "+ODETAIL_TABLE+" a " +
-                    "LEFT JOIN mp_inv_master b " +
+                    "LEFT JOIN MP_Inv_Master b " +
                     "	ON a.sStockIDx = b.sListngID " +
-                    "LEFT JOIN inv_category c " +
+                    "LEFT JOIN Inv_Category c " +
                     "	ON b.sCategrID = c.sCategrID " +
                     "LEFT JOIN  CP_Inventory d " +
                     "	ON d.sStockIDx = a.sStockIDx " +

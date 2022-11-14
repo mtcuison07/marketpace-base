@@ -255,11 +255,13 @@ public class ClientProfiling {
             MiscUtil.close(loRS1);
             lnRow++;
         }
+        
         if (MiscUtil.RecordCount(loRS) == 0){
             MiscUtil.close(loRS);
             p_sMessage = "No record found for the given criteria.";
             return false;
         }
+        
         MiscUtil.close(loRS);
         return true;
     }
@@ -337,6 +339,7 @@ public class ClientProfiling {
         
         return createDetail();
     }
+    
     
 
     public Object getMasterID(int fnRow, int fnIndex) throws SQLException{
