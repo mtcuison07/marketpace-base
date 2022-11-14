@@ -27,9 +27,9 @@ import org.rmj.appdriver.constants.TransactionStatus;
  * @author User
  */
 public class OrderList {
-     private final String MASTER_TABLE = "ecommerce_order_master";
-    private final String DETAIL_TABLE = "ecommerce_order_detail";
-    private final String PAYMENT_TABLE = "other_payment_received";
+     private final String MASTER_TABLE = "ECommerce_Order_Master";
+    private final String DETAIL_TABLE = "ECommerce_Order_Detail";
+    private final String PAYMENT_TABLE = "Other_Payment_Received";
     
 //    private final String PAYMENT_TABLE = "other_payment_trans";
     
@@ -652,9 +652,9 @@ public class OrderList {
                     "  IFNULL(a.nUnitPrce, 0) nUnitPrce, " +
                     "  IFNULL(a.sReferNox, '') sReferNox " +
                     "FROM "+DETAIL_TABLE+" a " +
-                    "LEFT JOIN mp_inv_master b " +
+                    "LEFT JOIN MP_Inv_Master b " +
                     "   ON a.sStockIDx = b.sListngID " +
-                    "LEFT JOIN inv_category c " +
+                    "LEFT JOIN Inv_Category c " +
                     "   ON b.sCategrID = c.sCategrID " +
                     "LEFT JOIN  CP_Inventory d " +
                     "   ON d.sStockIDx = a.sStockIDx " +
@@ -662,7 +662,7 @@ public class OrderList {
                     "   ON d.sBrandIDx = e.sBrandIDx " +
                     "LEFT JOIN CP_Model f " +
                     "   ON d.sModelIDx = f.sModelIDx " +
-                    "LEFT JOIN color g " +
+                    "LEFT JOIN Color g " +
                     "   ON d.sColorIDx = g.sColorIDx";
         return lsSQL;
     }

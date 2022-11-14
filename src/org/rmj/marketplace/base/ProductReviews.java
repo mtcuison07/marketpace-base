@@ -364,7 +364,7 @@ public class ProductReviews {
                     ",  '' sImagesxx " +
                     ",  IFNULL(CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName), '') AS sCompnyNm " +
                 " FROM " + MASTER_TABLE + " a " +
-                    "  LEFT JOIN app_user_master c " +
+                    "  LEFT JOIN App_User_Master c " +
                     "    ON a.sCreatedx = c.sUserIDxx " +
                     "  LEFT JOIN Client_Master b " +
                     "    ON c.sEmployNo = b.sClientID " +
@@ -411,7 +411,7 @@ public class ProductReviews {
                     ",  b.sImagesxx " +
                     ",  IFNULL(CONCAT(h.sFrstName, ' ', h.sMiddName,' ', h.sLastName), '') AS sCompnyNm " +
                 " FROM " + MASTER_TABLE + " a " +
-                    "  LEFT JOIN app_user_master i " +
+                    "  LEFT JOIN App_User_Master i " +
                     "    ON a.sCreatedx = i.sUserIDxx " +
                     "  LEFT JOIN Client_Master h " +
                     "    ON i.sEmployNo = h.sClientID " +

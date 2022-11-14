@@ -354,14 +354,14 @@ public class FAQuestions {
                     ", '' xCategrNm " +
                     ", '' sImagesxx " +
                     ", IFNULL(CONCAT(b.sFrstName, ' ', b.sMiddName,' ', b.sLastName), '') AS sCompnyNm " +
-                "FROM mp_questions a " +
-                    "  LEFT JOIN app_user_master f " +
+                "FROM MP_Questions a " +
+                    "  LEFT JOIN App_User_Master f " +
                     "    ON a.sCreatedx = f.sUserIDxx " +
                     "  LEFT JOIN Client_Master b " +
                     "    ON f.sEmployNo = b.sClientID " +
-                    "  LEFT JOIN mp_inv_master c " +
+                    "  LEFT JOIN MP_Inv_Master c " +
                     "	ON a.sListngID = c.sListngID " +
-                    "  LEFT JOIN cp_inventory d  " +
+                    "  LEFT JOIN CP_Inventory d  " +
                     "	ON d.sStockIDx = c.sStockIDx " +
                     "  LEFT JOIN CP_Model e " +
                     "	ON e.sModelIDx = d.sModelIDx " +
@@ -463,7 +463,7 @@ public class FAQuestions {
                     ",  b.sImagesxx " +
                     ",  IFNULL(CONCAT(h.sFrstName, ' ', h.sMiddName,' ', h.sLastName), '') AS sCompnyNm " +
                 " FROM " + MASTER_TABLE + " a " +
-                    "  LEFT JOIN app_user_master i " +
+                    "  LEFT JOIN App_User_Master i " +
                     "    ON a.sCreatedx = i.sUserIDxx " +
                     "  LEFT JOIN Client_Master h " +
                     "    ON i.sEmployNo = h.sClientID " +
