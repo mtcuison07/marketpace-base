@@ -177,7 +177,6 @@ public class WayBill {
         meta.setColumnType(16, Types.VARCHAR);
         meta.setColumnDisplaySize(16, 120);
         
-        
         p_oMaster = new CachedRowSetImpl();
         p_oMaster.setMetaData(meta);
         
@@ -202,7 +201,9 @@ public class WayBill {
         }
         
         p_sMessage = "";    
-        ResultSet loRS = p_oApp.executeQuery(getSQ_OrderMaster());
+        String lsSQL = getSQ_OrderMaster() + getSQ_OrderMaster1();
+        System.out.println(lsSQL);
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
         if (MiscUtil.RecordCount(loRS) == 0){
             MiscUtil.close(loRS);
             p_sMessage = "No record found for the given criteria.";
@@ -522,6 +523,68 @@ public class WayBill {
             lsCondition = "a.cTranStat IN (" + lsSQL.substring(2) + ")";
         } else 
             lsCondition = "a.cTranStat = " + SQLUtil.toSQL(lsStat);
+        
+            lsSQL = "SELECT " +
+                "   IFNULL(a.sTransNox,'') sTransNox, " +
+                "   IFNULL(a.dTransact,'') dTransact, " +
+                "   IFNULL(a.sTermIDxx,'') sTermIDxx, " +
+                "   IFNULL(h.sTermName,'') sTermName, " +
+                "   IFNULL(a.nTranTotl,0) nTranTotl, " +
+                "   IFNULL(a.nVATRatex,0) nVATRatex, " +
+                "   IFNULL(a.nDiscount,0) nDiscount, " +
+                "   IFNULL(a.nAddDiscx,0) nAddDiscx, " +
+                "   IFNULL(a.nFreightx,0) nFreightx, " +
+                "   IFNULL(a.nAmtPaidx,0) nAmtPaidx, " +
+                "   IFNULL(a.cTranStat,0) cTranStat, " +
+                "   IFNULL(a.sRemarksx,'') sRemarksx, " +
+                "   CONCAT(IFNULL(c.sFrstName,''), ' ', IFNULL(c.sMiddName,''),' ',IFNULL(c.sLastName,'')) AS sCompnyNm, " +
+                "   IFNULL(c.sHouseNox,'') sHouseNo1, " +
+                "   IFNULL(c.sAddressx,'') sAddress1, " +
+                "   IFNULL(d.sBrgyName,'') sBrgyNme1, " +
+                "   IFNULL(e.sTownName,'') sTownNme1, " +
+                "   IFNULL(c.sHouseNox,'') sHouseNo2, " +
+                "   IFNULL(c.sAddressx,'') sAddress2, " +
+                "   IFNULL(f.sBrgyName,'') sBrgyNme2, " +
+                "   IFNULL(g.sTownName,'') sTownNme2," +
+                "   IFNULL(c.sMobileNo,'') sMobileNo,  " +
+                "   IFNULL(c.sEmailAdd,'') sEmailAdd,   " +
+                "   IFNULL(a.sWaybilNo,'') sWaybilNo   " +
+                "  FROM " + ORDER_TABLE +" a " +
+                "  LEFT JOIN Client_Master c  " +
+                "   ON a.sClientID = c.sClientID  " +
+                "  LEFT JOIN Barangay d   " +
+                "   ON c.sBrgyIDxx = d.sBrgyIDxx   " +
+                "  LEFT JOIN TownCity e   " +
+                "   ON c.sTownIDxx = e.sTownIDxx   " +
+                "  LEFT JOIN Barangay f   " +
+                "   ON c.sBrgyIDxx = f.sBrgyIDxx   " +
+                "  LEFT JOIN TownCity g   " +
+                "   ON c.sTownIDxx = g.sTownIDxx   " +
+                "  LEFT JOIN Term h   " +
+                "   ON a.sTermIDxx = h.sTermIDxx   " +
+                "  WHERE a.sClientID = c.sClientID  " +
+                "  AND (a.dWaybillx IS NOT NULL  AND a.dWaybillx <> '') " +
+                "  AND (a.sWaybilNo IS NOT NULL  AND a.sWaybilNo <> '') " +
+                "  AND (a.sAppUsrID IS NOT NULL  AND a.sAppUsrID <> '') " +
+                "  AND (a.sBatchNox IS NULL  OR a.sBatchNox = '') " +
+                "  AND (a.dPickedUp IS NULL  OR a.dPickedUp = '') " +
+                "  AND "  + lsCondition ;
+        return lsSQL;
+    }
+    
+    public String getSQ_OrderMaster1(){
+        String lsSQL = "";
+        
+        String lsCondition = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            lsCondition = "a.cTranStat IN (" + lsSQL.substring(2) + ")";
+        } else 
+            lsCondition = "a.cTranStat = " + SQLUtil.toSQL(lsStat);
                
 //        lsSQL = "SELECT " +
 //                "  IFNULL(a.sTransNox,'') sTransNox," +
@@ -548,7 +611,7 @@ public class WayBill {
 //                "ON b.sTownIDxx = c.sTownIDxx " + 
 //                " WHERE sWaybilNo IS NOT NULL " +
 //                " AND " +lsCondition + "ORDER BY dTransact DESC";
-            lsSQL = "SELECT " +
+            lsSQL = "\n UNION SELECT " +
                 "   IFNULL(a.sTransNox,'') sTransNox, " +
                 "   IFNULL(a.dTransact,'') dTransact, " +
                 "   IFNULL(a.sTermIDxx,'') sTermIDxx, " +
@@ -593,9 +656,11 @@ public class WayBill {
                 "  WHERE a.sAppUsrID = c.sUserIDxx  " +
                 "  AND (a.dWaybillx IS NOT NULL  AND a.dWaybillx <> '') " +
                 "  AND (a.sWaybilNo IS NOT NULL  AND a.sWaybilNo <> '') " +
+                "  AND (a.sAppUsrID IS NOT NULL  AND a.sAppUsrID <> '') " +
                 "  AND (a.sBatchNox IS NULL  OR a.sBatchNox = '') " +
                 "  AND (a.dPickedUp IS NULL  OR a.dPickedUp = '') " +
-                "  AND "  + lsCondition + "ORDER BY dTransact DESC";
+                "  AND "  + lsCondition + " GROUP BY sTransNox" +
+                " ORDER BY dTransact DESC";
         return lsSQL;
     }
     public String getSQ_Master(){

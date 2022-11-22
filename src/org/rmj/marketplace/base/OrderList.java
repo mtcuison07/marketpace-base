@@ -96,7 +96,10 @@ public class OrderList {
         }
         
         p_sMessage = "";    
-        ResultSet loRS = p_oApp.executeQuery(getSQ_Master() + " ORDER BY a.dTransact DESC");
+        String lsSQL =getSQ_Master() + " GROUP BY sTransNox ";
+        lsSQL = lsSQL + getSQ_Master1() + " GROUP BY sTransNox DESC ORDER BY dTransact DESC";
+        System.out.println(lsSQL);
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
         
         System.out.println(getSQ_Master() + " ORDER BY a.dTransact DESC");
         if (MiscUtil.RecordCount(loRS) == 0){
@@ -575,6 +578,31 @@ public class OrderList {
                 " WHERE a.sSourceCD = 'MPSO' ";
         return lsSQL;
     }
+    
+    public String getSQ_Payment1(){
+        String lsSQL = "";
+        
+        lsSQL = " UNION SELECT " +
+                "  IFNULL(a.sTransNox, '') sTransNox" +
+                ", IFNULL(b.sClientID, '') sClientID" +
+                ", IFNULL(a.sReferNox, '') sReferNox" +
+                ", IFNULL(a.nTotlAmnt, '') nTotlAmnt" +
+                ", IFNULL(a.nAmtPaidx, '') nAmtPaidx" +
+                ", IFNULL(a.sTermCode, '') sTermCode" +
+                ", IFNULL(a.sRemarksx, '') sRemarksx" +
+                ", IFNULL(a.sSourceCd, '') sSourceCd" +
+                ", IFNULL(a.sSourceNo, '') sSourceNo" +
+                ", IFNULL(a.cTranStat, '') cTranStat" +
+                ", IFNULL(c.sTermName, '') sTermName" +
+                ", IFNULL(a.dModified, '') dModified" +
+                "  FROM " + PAYMENT_TABLE + " a " +
+                "    LEFT JOIN App_User_Profile b " +
+                "       ON a.sClientID = b.sUserIDxx " +
+                "    LEFT JOIN Term c " +
+                "       ON a.sTermCode = c.sTermIDxx " +
+                " WHERE a.sSourceCD = 'MPSO' ";
+        return lsSQL;
+    }
     public String getSQ_Master(){
         String lsSQL = "";
         
@@ -635,10 +663,76 @@ public class OrderList {
                 "   ON g.sProvIDxx = j.sProvIDxx   " +
                 "  WHERE a.sAppUsrID = c.sUserIDxx " +
                 "  AND (a.sPOSNoxxx IS NULL OR a.sPOSNoxxx = '') " +
+                "  AND (a.sAppUsrID IS NOT NULL OR a.sAppUsrID <> '') " +
                 "  AND " +lsCondition;
         return lsSQL;
     }
     
+    public String getSQ_Master1(){
+        String lsSQL = "";
+        
+        String lsCondition = "";
+        String lsStat = String.valueOf(p_nTranStat);
+        
+        if (lsStat.length() > 1){
+            for (int lnCtr = 0; lnCtr <= lsStat.length()-1; lnCtr++){
+                lsSQL += ", " + SQLUtil.toSQL(Character.toString(lsStat.charAt(lnCtr)));
+            }
+            lsCondition = "a.cTranStat IN (" + lsSQL.substring(2) + ")";
+        } else{
+            lsCondition = "a.cTranStat = " + SQLUtil.toSQL(lsStat);
+        } 
+              
+        lsSQL = " UNION SELECT " +
+                "   IFNULL(a.sTransNox,'') sTransNox, " +
+                "   IFNULL(a.dTransact,'') dTransact, " +
+                "   IFNULL(a.sClientID,'') sClientID, " +
+                "   IFNULL(h.sTermName,'') sTermName, " +
+                "   IFNULL(a.nTranTotl,0) nTranTotl, " +
+                "   IFNULL(a.nVATRatex,0) nVATRatex, " +
+                "   IFNULL(a.nDiscount,0) nDiscount, " +
+                "   IFNULL(a.nAddDiscx,0) nAddDiscx, " +
+                "   IFNULL(a.nFreightx,0) nFreightx, " +
+                "   IFNULL(a.nAmtPaidx,0) nAmtPaidx, " +
+                "   IFNULL(a.cTranStat,0) cTranStat, " +
+                "   IFNULL(a.sRemarksx,'') sRemarksx, " +
+                "   CONCAT(IFNULL(c.sFrstName,''), ' ', IFNULL(c.sMiddName,''),' ',IFNULL(c.sLastName,'')) AS sCompnyNm, " +
+                "   IFNULL(c.sHouseNox,'') sHouseNo1, " +
+                "   IFNULL(c.sAddressx,'') sAddress1, " +
+                "   IFNULL(d.sBrgyName,'') sBrgyNme1, " +
+                "   IFNULL(e.sTownName,'') sTownNme1, " +
+                "   IFNULL(i.sProvName,'') sProvNme1, " +
+                "   IFNULL(c.sHouseNox,'') sHouseNo2, " +
+                "   IFNULL(c.sAddressx,'') sAddress2, " +
+                "   IFNULL(f.sBrgyName,'') sBrgyNme2, " +
+                "   IFNULL(g.sTownName,'') sTownNme2," +
+                "   IFNULL(j.sProvName,'') sProvNme2, " +
+                "   IFNULL(a.sPOSNoxxx,'') sPOSNoxxx, " +
+                "   IFNULL(a.nProcPaym, 0) nProcPaym " +
+                "  FROM " + MASTER_TABLE +" a " +
+                "  LEFT JOIN Client_Master c  " +
+                "   ON a.sClientID = c.sClientID  " +
+                "  LEFT JOIN Barangay d   " +
+                "   ON c.sBrgyIDxx = d.sBrgyIDxx   " +
+                "  LEFT JOIN TownCity e   " +
+                "   ON c.sTownIDxx = e.sTownIDxx   " +
+                "  LEFT JOIN Barangay f   " +
+                "   ON c.sBrgyIDxx = f.sBrgyIDxx   " +
+                "  LEFT JOIN TownCity g   " +
+                "   ON c.sTownIDxx = g.sTownIDxx   " +
+                "  LEFT JOIN Term h   " +
+                "   ON a.sTermIDxx = h.sTermIDxx   " +
+                "  LEFT JOIN Province i   " +
+                "   ON e.sProvIDxx = i.sProvIDxx   " +
+                "  LEFT JOIN Province j   " +
+                "   ON g.sProvIDxx = j.sProvIDxx   " +
+                "  WHERE a.sClientID = c.sClientID " +
+                "  AND (a.sPOSNoxxx IS NULL OR a.sPOSNoxxx = '') " +
+                "  AND (a.sAppUsrID IS NOT NULL OR a.sAppUsrID <> '') " +
+                "  AND " +lsCondition;
+        return lsSQL;
+    }
+   
     public String getSQ_Detail(){
         String lsSQL = "";
         lsSQL = "SELECT " +
@@ -709,83 +803,6 @@ public class OrderList {
         
         return lnIndex;
     }
-//    public boolean SaveTransaction() throws SQLException{
-//        if (p_oApp == null){
-//            p_sMessage = "Application driver is not set.";
-//            return false;
-//        }
-//        
-//        p_sMessage = "";
-//        
-//        if (p_nEditMode != EditMode.ADDNEW &&
-//            p_nEditMode != EditMode.UPDATE){
-//            p_sMessage = "Invalid edit mode detected.";
-//            return false;
-//        }
-//        
-//        
-//        
-//        int lnCtr = 1;
-//        int lnRow;
-//        String lsSQL;
-//        
-//        
-//        lnRow = getPaymentItemCount();
-//        while(lnCtr <= lnRow ){
-//            setPayment(lnCtr, "dModified", p_oApp.getServerDate().toString());
-//            String transNox = (String)getPayment(lnCtr, "sTransNox");
-//            System.out.println("nAmtPaidx = " +(String)getPayment(lnCtr, "nAmtPaidx"));
-//            if (!isEntryOK(lnCtr)) return false;
-//            lsSQL = MiscUtil.rowset2SQL(p_oPayment, 
-//                                        PAYMENT_TABLE, 
-//                                        "",
-//                                        " sTransNox = " + SQLUtil.toSQL(transNox) 
-//                                        + " AND sSourceNo = " + SQLUtil.toSQL(getPayment(lnCtr, "sSourceNo")));
-//            
-//            if (!lsSQL.isEmpty()){
-//                
-//                if (!p_bWithParent) p_oApp.beginTrans();
-//                if (!lsSQL.isEmpty()){
-//                    if (p_oApp.executeQuery(lsSQL, PAYMENT_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
-//                        if (!p_bWithParent) p_oApp.rollbackTrans();
-//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-//                        return false;
-//                    }
-//                }
-//                if(Integer.parseInt(getPayment(lnCtr,"cTranStat").toString())>0){
-//                    String lsTransNox = (String) getPayment(lnCtr,"sSourceNo");
-//                    
-//                    double lnValue = Double.valueOf(getMaster("nProcPaym").toString());
-//                    System.out.println("lnValue = " + lnValue);
-//                    lnValue = lnValue + Double.valueOf(getPayment(lnCtr,"nAmtPaidx").toString());
-////                    setMaster("nProcPaym", lnValue);
-//
-//                    lsSQL = "UPDATE " + MASTER_TABLE + " SET" +
-//                                        "  nProcPaym = " + SQLUtil.toSQL(lnValue) +
-//                                        ", dModified = " + SQLUtil.toSQL(p_oApp.getServerDate()) +
-//                                    " WHERE sTransNox = " + SQLUtil.toSQL(lsTransNox);
-//                    if (!lsSQL.isEmpty()){
-//                    if (p_oApp.executeQuery(lsSQL, MASTER_TABLE, p_sBranchCd, transNox.substring(0, 4)) <= 0){
-//                        if (!p_bWithParent) p_oApp.rollbackTrans();
-//                        p_sMessage = p_oApp.getMessage() + ";" + p_oApp.getErrMsg();
-//                        return false;
-//                    }
-//                }
-//                }
-//                p_nEditMode = EditMode.UNKNOWN;
-//                
-//                if (!p_bWithParent) p_oApp.commitTrans();
-//                if (p_oResult != null) p_oResult.OnSave("Transaction save successfully.");
-//                return true;
-//            }
-//            lnCtr++;
-//        }
-//            
-//        
-//        return true;
-//    }
-//    
-//    
     public boolean SaveTransaction() throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
