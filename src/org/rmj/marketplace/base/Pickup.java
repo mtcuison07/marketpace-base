@@ -294,11 +294,10 @@ public class Pickup {
             return false;
         }
         
-//        createWaybill();
-       
          p_sMessage = "";  
         String lsSQL = "";
         lsSQL = getSQ_Waybill()+ " AND b.sBatchNox = " + SQLUtil.toSQL(fsTransNox);
+        lsSQL = lsSQL + getSQ_Waybill1()+ " AND b.sBatchNox = " + SQLUtil.toSQL(fsTransNox);
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
        
         RowSetFactory factory = RowSetProvider.newFactory();
@@ -322,27 +321,63 @@ public class Pickup {
         } else 
             lsCondition = "a.cTranStat = " + SQLUtil.toSQL(lsStat);
           
-        lsSQL = "SELECT" +
-                  " IFNULL(a.sBatchNox,'') sBatchNox" +
-                  ", IFNULL(a.dTransact,'') dTransact" +
-                  ", IFNULL(a.sRemarksx,'') sRemarksx" +
-                  ", IFNULL(a.dPickedUp,'') dPickedUp" +
-                  ", IFNULL(a.sPickedBy,'') sPickedBy" +
-                  ", IFNULL(a.cTranStat,0) cTranStat" +
-               " FROM ECommerce_Pickup_Master a " + 
-               ", ECommerce_Order_Master b " + 
-               ", App_User_Profile c " + 
-               " WHERE " + lsCondition +
-               " AND a.sBatchNox = b.sBatchNox "+
-               " AND c.sUserIDxx = b.sAppUsrID "+
-               " ORDER BY dTransact DESC";
+        lsSQL = "SELECT " +
+                    " IFNULL(a.sBatchNox,'') sBatchNox " +
+                    ", IFNULL(a.dTransact,'') dTransact " +
+                    ", IFNULL(a.sRemarksx,'') sRemarksx " +
+                    ", IFNULL(a.dPickedUp,'') dPickedUp " +
+                    ", IFNULL(a.sPickedBy,'') sPickedBy " +
+                    ", IFNULL(a.cTranStat,0) cTranStat " +
+                " FROM ECommerce_Pickup_Master a   " +
+                ", ECommerce_Order_Master b   " +
+                ", Client_Master c   " +
+                ", App_User_Profile d   " +
+                " WHERE  a.cTranStat IN ('0')  " +
+                " AND a.sBatchNox = b.sBatchNox  " +
+                " AND c.sClientID = b.sClientID  " +
+                " UNION SELECT " +
+                    "  IFNULL(a.sBatchNox,'') sBatchNox " +
+                    ", IFNULL(a.dTransact,'') dTransact " +
+                    ", IFNULL(a.sRemarksx,'') sRemarksx " +
+                    ", IFNULL(a.dPickedUp,'') dPickedUp " +
+                    ", IFNULL(a.sPickedBy,'') sPickedBy " +
+                    ", IFNULL(a.cTranStat,0) cTranStat " +
+                    " FROM ECommerce_Pickup_Master a   " +
+                ", ECommerce_Order_Master b   " +
+                ", App_User_Profile c   " +
+                " WHERE  a.cTranStat IN ('0')  " +
+                " AND a.sBatchNox = b.sBatchNox  " +
+                " AND c.sUserIDxx = b.sAppUsrID  " +
+                " ORDER BY dTransact DESC";
                
         return lsSQL;
     }
      public String getSQ_Waybill(){
         String lsSQL = "";
-          
+           
         lsSQL = "SELECT" +
+            "  IFNULL(a.sTransNox, '') sTransNox, " +
+            "  CONCAT(IFNULL(c.sFrstName,''), ' ', IFNULL(c.sMiddName,''),' ',IFNULL(c.sLastName,'')) AS sCompnyNm " +
+            ", IFNULL(b.sOrderNox, '') sOrderNox " +
+            ", IFNULL(a.sTrackrNo, '') sTrackrNo " +
+            ", IFNULL(d.sPackngDs, '') sPackngDs " +
+            ", IFNULL(b.dTransact, '') dTransact " +
+            ", IFNULL(b.sBatchNox, '') sBatchNox " +
+            ", IFNULL(b.sTransNox, '') xReferNox " +
+            " FROM ECommerce_Order_Waybill a" +
+            ", ECommerce_Order_Master b" +
+            ", Client_Master c" +
+            ", ECommerce_Packaging d" +
+         " WHERE a.sTransNox = b.sWaybilNo " +
+            " AND b.sClientID = c.sClientID " +
+            " AND a.sPackngCD = d.sPackngCD "  ;
+               
+        return lsSQL;
+    }
+     public String getSQ_Waybill1(){
+        String lsSQL = "";
+           
+        lsSQL = " UNION SELECT" +
             "  IFNULL(a.sTransNox, '') sTransNox, " +
             "  CONCAT(IFNULL(c.sFrstName,''), ' ', IFNULL(c.sMiddName,''),' ',IFNULL(c.sLastName,'')) AS sCompnyNm " +
             ", IFNULL(b.sOrderNox, '') sOrderNox " +
