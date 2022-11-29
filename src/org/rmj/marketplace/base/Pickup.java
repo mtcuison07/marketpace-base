@@ -370,6 +370,7 @@ public class Pickup {
             ", ECommerce_Packaging d" +
          " WHERE a.sTransNox = b.sWaybilNo " +
             " AND b.sClientID = c.sClientID " +
+            " AND b.sBranchCd <> 'MX01' " +
             " AND a.sPackngCD = d.sPackngCD "  ;
                
         return lsSQL;
@@ -392,6 +393,7 @@ public class Pickup {
             ", ECommerce_Packaging d" +
          " WHERE a.sTransNox = b.sWaybilNo " +
             " AND b.sAppUsrID = c.sUserIDxx " +
+            " AND b.sBranchCd = 'MX01' " +
             " AND a.sPackngCD = d.sPackngCD "  ;
                
         return lsSQL;

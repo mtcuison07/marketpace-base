@@ -566,6 +566,7 @@ public class WayBill {
                 "  AND (a.dWaybillx IS NOT NULL  AND a.dWaybillx <> '') " +
                 "  AND (a.sWaybilNo IS NOT NULL  AND a.sWaybilNo <> '') " +
                 "  AND (a.sAppUsrID IS NOT NULL  AND a.sAppUsrID <> '') " +
+                "  AND a.sBranchCd <> 'MX01' " +
                 "  AND (a.sBatchNox IS NULL  OR a.sBatchNox = '') " +
                 "  AND (a.dPickedUp IS NULL  OR a.dPickedUp = '') " +
                 "  AND "  + lsCondition ;
@@ -659,6 +660,7 @@ public class WayBill {
                 "  AND (a.sAppUsrID IS NOT NULL  AND a.sAppUsrID <> '') " +
                 "  AND (a.sBatchNox IS NULL  OR a.sBatchNox = '') " +
                 "  AND (a.dPickedUp IS NULL  OR a.dPickedUp = '') " +
+                "  AND a.sBranchCd = 'MX01' " +
                 "  AND "  + lsCondition + " GROUP BY sTransNox" +
                 " ORDER BY dTransact DESC";
         return lsSQL;
