@@ -664,6 +664,7 @@ public class OrderList {
                 "  WHERE a.sAppUsrID = c.sUserIDxx " +
                 "  AND (a.sPOSNoxxx IS NULL OR a.sPOSNoxxx = '') " +
                 "  AND (a.sAppUsrID IS NOT NULL OR a.sAppUsrID <> '') " +
+                "  AND a.sBranchCd = 'MX01' " +
                 "  AND " +lsCondition;
         return lsSQL;
     }
@@ -729,6 +730,7 @@ public class OrderList {
                 "  WHERE a.sClientID = c.sClientID " +
                 "  AND (a.sPOSNoxxx IS NULL OR a.sPOSNoxxx = '') " +
                 "  AND (a.sAppUsrID IS NOT NULL OR a.sAppUsrID <> '') " +
+                "  AND a.sBranchCd <> 'MX01' " +
                 "  AND " +lsCondition;
         return lsSQL;
     }

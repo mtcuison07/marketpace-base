@@ -5,8 +5,11 @@
         <group name="guanzon"/>
         <group>
             <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/Pickup.java</file>
+            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/ProductListing.java</file>
             <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/WayBill.java</file>
             <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/OrderList.java</file>
+            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/FAQuestions.java</file>
+            <file>file:/C:/Users/User/Guanzon/github/marketpace-base/src/org/rmj/marketplace/base/ProductReviews.java</file>
         </group>
     </open-files>
 </project-private>
