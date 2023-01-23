@@ -114,6 +114,33 @@ public class OrderList {
         
         return true;
     }
+    public boolean LoadListReport(String fsDateFrom, String fsDateThru) throws SQLException {
+          if (p_oApp == null){
+            p_sMessage = "Application driver is not set.";
+            return false;
+        }
+        
+        System.out.println(fsDateFrom);
+        System.out.println(fsDateThru);
+        p_sMessage = "";    
+        String lsSQL =getSQ_Master() + " AND  (a.dTransact BETWEEN "+SQLUtil.toSQL(fsDateFrom)+" AND "+SQLUtil.toSQL(fsDateThru) +" )  GROUP BY sTransNox ";
+        lsSQL = lsSQL + getSQ_Master1() + " AND  (a.dTransact BETWEEN "+SQLUtil.toSQL(fsDateFrom)+" AND "+SQLUtil.toSQL(fsDateThru) +" ) GROUP BY sTransNox  ORDER BY dTransact ASC";
+        System.out.println(lsSQL);
+        ResultSet loRS = p_oApp.executeQuery(lsSQL);
+        
+        System.out.println(getSQ_Master() + " ORDER BY a.dTransact DESC");
+        if (MiscUtil.RecordCount(loRS) == 0){
+            MiscUtil.close(loRS);
+            p_sMessage = "No record found for the given criteria.";
+            return false;
+        }
+        RowSetFactory factory = RowSetProvider.newFactory();
+        p_oMaster = factory.createCachedRowSet();
+        p_oMaster.populate(loRS);
+        MiscUtil.close(loRS);
+        
+        return true;
+    }
     public boolean LoadOrderDetail(String fsTransNox, boolean fbByCode) throws SQLException{
         if (p_oApp == null){
             p_sMessage = "Application driver is not set.";
