@@ -374,6 +374,7 @@ public class ProductListing {
         else
             lsSQL = getSQ_Detail() + " HAVING xDescript LIKE " + SQLUtil.toSQL(fsValue + "%") + " ORDER BY a.dCreatedx ASC";
         
+        System.out.println(lsSQL);
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
     
         if (MiscUtil.RecordCount(loRS) == 0){
@@ -1066,9 +1067,9 @@ public class ProductListing {
                     ", a.dCreatedx" +
                     ", a.sApproved" +
                     ", a.dApproved" +
-                    ", a.sInactive" +
-                    ", a.dInactive" +
-                    ", a.dActivate" +
+                    ", IFNULL(a.sInactive,'') sInactive" +
+                    ", IFNULL(a.dInactive,'') dInactive" +
+                    ", IFNULL(a.dActivate,'') dActivate" +
                     ", a.cTranStat" +
                     ", c.sBarrcode xBarCodex" +
                     ", c.sDescript xDescript" +
