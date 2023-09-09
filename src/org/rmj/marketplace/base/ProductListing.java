@@ -701,7 +701,7 @@ public class ProductListing {
         p_oMaster.updateObject("sListngID", MiscUtil.getNextCode(MASTER_TABLE, "sListngID", true, p_oApp.getConnection(), p_sBranchCd));
         p_oMaster.updateObject("sDescript", "0");
         p_oMaster.updateObject("sImagesxx", "0");
-        p_oMaster.updateObject("cTranStat", "0");
+        p_oMaster.updateObject("cTranStat", "1");
         
         p_oMaster.insertRow();
         p_oMaster.moveToCurrentRow();
