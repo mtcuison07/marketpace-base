@@ -210,23 +210,20 @@ public class ClientProfiling {
         p_sMessage = ""; 
         
         String lsSQL = "SELECT" +
-                        "  sUserIDxx" +
+                            "  sUserIDxx" +
                         " FROM App_User_Master " +
                         " WHERE sProdctID = 'GuanzonApp' " +
-                        " AND cMPCLient = 1 " +
+                            " AND cMPCLient = 1 " +
                         " ORDER BY dTimeStmp DESC";
-        
-//        p_oMaster.first();
-//        if (!p_oMaster.getString("sUserIDxx").isEmpty())
-//        lsSQL = MiscUtil.addCondition(lsSQL, "sUserIDxx = " + SQLUtil.toSQL(p_oMaster.getString("sUserIDxx")));
         
         ResultSet loRS = p_oApp.executeQuery(lsSQL);
         
         int lnRow = 1;
         
         while (loRS.next()){
+            lsSQL = getSQ_Master(loRS.getString("sUserIDxx"));
             
-            ResultSet loRS1 = p_oApp.executeQuery(getSQ_Master(loRS.getString("sUserIDxx")));
+            ResultSet loRS1 = p_oApp.executeQuery(lsSQL);
             while(loRS1.next()){
                 p_oDetail.last();
                 p_oDetail.moveToInsertRow(); //add new
@@ -248,9 +245,6 @@ public class ClientProfiling {
                 p_oDetail.moveToCurrentRow(); //save data
                 
             }
-            
-        
-           
             
             MiscUtil.close(loRS1);
             lnRow++;
@@ -339,8 +333,6 @@ public class ClientProfiling {
         
         return createDetail();
     }
-    
-    
 
     public Object getMasterID(int fnRow, int fnIndex) throws SQLException{
         if (fnIndex == 0) return null;
