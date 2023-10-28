@@ -48,7 +48,6 @@ public class ClientProfiling {
 
     private CachedRowSet p_oMaster;
     private CachedRowSet p_oDetail;
-    private CachedRowSet p_oVerify;
     private CachedRowSet p_oMasterID;
     private CachedRowSet p_oPicture;
     private CachedRowSet p_oProfile;
